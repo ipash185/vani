@@ -68,11 +68,11 @@
   .main-content {
     padding: 1rem;
   }
-  
+
   .loading-screen h2 {
     font-size: 2rem;
   }
-  
+
   .loading-screen p {
     font-size: 1rem;
   }
@@ -258,8 +258,12 @@
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .analysis-results {
@@ -380,7 +384,7 @@
 }
 
 .phoneme-symbol {
-  font-family: 'Courier New', monospace;
+  font-family: "Courier New", monospace;
   background: #667eea;
   color: white;
   padding: 0.25rem 0.5rem;
@@ -416,6 +420,7 @@
   border-radius: 12px;
   padding: 1.5rem;
   margin-bottom: 2rem;
+  display: none;
 }
 
 .detailed-analysis h4 {
@@ -611,7 +616,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
   }
   50% {
@@ -717,7 +723,7 @@
 }
 
 .score-circle::before {
-  content: '';
+  content: "";
   position: absolute;
   width: 40px;
   height: 40px;
@@ -1015,8 +1021,12 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .record-button.processing {
@@ -1060,25 +1070,25 @@
 
 .prediction-value.target {
   background: rgba(76, 175, 80, 0.2);
-  color: #4CAF50;
+  color: #4caf50;
   border: 1px solid rgba(76, 175, 80, 0.3);
 }
 
 .prediction-value.correct {
   background: rgba(76, 175, 80, 0.2);
-  color: #4CAF50;
+  color: #4caf50;
   border: 1px solid rgba(76, 175, 80, 0.3);
 }
 
 .prediction-value.incorrect {
   background: rgba(244, 67, 54, 0.2);
-  color: #F44336;
+  color: #f44336;
   border: 1px solid rgba(244, 67, 54, 0.3);
 }
 
 .prediction-value.confidence {
   background: rgba(33, 150, 243, 0.2);
-  color: #2196F3;
+  color: #2196f3;
   border: 1px solid rgba(33, 150, 243, 0.3);
 }
 
@@ -1086,16 +1096,14 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #4CAF50;
+  color: #4caf50;
   font-weight: 600;
   margin-top: 1rem;
 }
 
 .improvement-message {
-  color: #FF9800;
+  color: #ff9800;
   font-weight: 600;
   margin-top: 1rem;
   text-align: center;
 }
-
-

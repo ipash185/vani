@@ -82,6 +82,76 @@ const WordPractice = () => {
     }
   }, []);
 
+  /**
+   * Analyzes an audio blob to find the actual speech duration without external libraries.
+   * @param {Blob} audioBlob The recorded audio blob.
+   * @returns {Promise<number>} The detected duration of speech in seconds.
+   */
+  const getSpeechDurationWithoutLibrary = async (audioBlob) => {
+    try {
+      // 1. Decode the audio data using the Web Audio API
+      const audioContext = new (window.OfflineAudioContext ||
+        window.webkitOfflineAudioContext)(1, 44100 * 5, 44100);
+      const arrayBuffer = await audioBlob.arrayBuffer();
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      const pcmData = audioBuffer.getChannelData(0); // Get raw PCM data
+
+      // 2. Define analysis parameters
+      const frameSize = 1024; // Samples per frame
+      const hopSize = frameSize / 2; // Overlap frames by 50%
+
+      // This is the most important value to tune. It depends on microphone sensitivity.
+      // A good starting point is between 0.005 and 0.02.
+      const energyThreshold = 0.01;
+
+      let firstSpeechFrame = -1;
+      let lastSpeechFrame = -1;
+
+      // 3. Loop through the audio data in frames
+      const totalFrames = Math.floor(pcmData.length / hopSize);
+      for (let i = 0; i < totalFrames; i++) {
+        const start = i * hopSize;
+        const end = start + frameSize;
+        const frame = pcmData.slice(start, end);
+
+        if (frame.length < frameSize) continue;
+
+        // 4. Calculate Energy (Root Mean Square) for the frame
+        let sumOfSquares = 0;
+        for (let j = 0; j < frame.length; j++) {
+          sumOfSquares += frame[j] * frame[j];
+        }
+        const rms = Math.sqrt(sumOfSquares / frame.length);
+
+        // 5. Classify the frame as speech or silence
+        if (rms > energyThreshold) {
+          if (firstSpeechFrame === -1) {
+            firstSpeechFrame = i; // Mark the start of speech
+          }
+          lastSpeechFrame = i; // Continuously update the end of speech
+        }
+      }
+
+      // 6. Calculate the final duration
+      if (firstSpeechFrame === -1) {
+        console.log("No speech detected above the energy threshold.");
+        return 0; // No speech found
+      }
+
+      const startTime = (firstSpeechFrame * hopSize) / audioContext.sampleRate;
+      const endTime =
+        (lastSpeechFrame * hopSize + frameSize) / audioContext.sampleRate;
+      const duration = endTime - startTime;
+
+      console.log(
+        `Detected speech duration (no library): ${duration.toFixed(2)}s`
+      );
+      return duration > 0 ? duration : 0;
+    } catch (error) {
+      console.error("Error analyzing audio for speech duration:", error);
+      return 0; // Return 0 on error
+    }
+  };
   const startRecording = async () => {
     try {
       setError(null);
@@ -99,7 +169,14 @@ const WordPractice = () => {
           const audioBlob = new Blob(audioChunksRef.current, {
             type: "audio/webm",
           });
-          await transcribeAudio(audioBlob, "recording.webm", durationInSeconds);
+          let speechDuration = await getSpeechDurationWithoutLibrary(audioBlob);
+          if (speechDuration <= 0) {
+            console.warn(
+              "Could not detect speech, falling back to total recording time."
+            );
+            speechDuration = totalRecordingDuration;
+          }
+          await transcribeAudio(audioBlob, "recording.webm", speechDuration);
         };
 
         recordingStartRef.current = Date.now();
@@ -164,9 +241,8 @@ const WordPractice = () => {
       const analysisData = response.data;
 
       // Calculate speaking speed
-      const spokenWordCount = spoken.trim().split(/\s+/).length;
-      const wordsPerMinute = (spokenWordCount / duration) * 60;
-      const speedFactor = wordsPerMinute > 0 ? wordsPerMinute / 150 : 0;
+      const TARGET_WORD_DURATION = 0.8;
+      const speedFactor = duration > 0 ? TARGET_WORD_DURATION / duration : 0;
 
       const transformedAnalysis = {
         accuracy: analysisData.score,
