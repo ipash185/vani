@@ -154,3 +154,4 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
 };
 
 export default Navbar;
+

@@ -219,3 +219,4 @@ export const PROGRESS_TRACKING = {
   lastPracticeDate: null,
   achievements: []
 };
+

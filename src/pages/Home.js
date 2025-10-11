@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -11,13 +11,26 @@ import {
   Target,
   Users,
   Clock,
-  Award
+  Award,
+  TrendingUp,
+  CheckCircle
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { CORE_WORDS } from '../data/phonemes';
+import progressService from '../services/progressService';
 
 const Home = () => {
   const { state } = useApp();
+  const [realProgress, setRealProgress] = useState(null);
+  const [statistics, setStatistics] = useState(null);
+
+  // Load real progress data
+  useEffect(() => {
+    const currentProgress = progressService.getProgress();
+    const currentStats = progressService.getStatistics();
+    setRealProgress(currentProgress);
+    setStatistics(currentStats);
+  }, []);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -65,8 +78,8 @@ const Home = () => {
       icon: BarChart3,
       link: '/sentence',
       color: 'linear-gradient(45deg, #45b7d1, #96c93d)',
-      progress: 0,
-      total: 10
+      progress: realProgress?.totalSentencesPracticed || 0,
+      total: 50
     },
     {
       title: 'View Progress',
@@ -74,34 +87,34 @@ const Home = () => {
       icon: Trophy,
       link: '/progress',
       color: 'linear-gradient(45deg, #f093fb, #f5576c)',
-      progress: state.progress?.totalPoints || 0,
-      total: 1000
+      progress: realProgress?.totalSessions || 0,
+      total: 100
     }
   ];
 
   const stats = [
     {
-      label: 'Points Earned',
-      value: state.progress?.totalPoints || 0,
-      icon: Star,
+      label: 'Sessions Completed',
+      value: realProgress?.totalSessions || 0,
+      icon: BarChart3,
       color: '#ffd700'
     },
     {
       label: 'Current Streak',
-      value: state.progress?.streak || 0,
+      value: realProgress?.streak || 0,
       icon: Target,
       color: '#ff6b6b'
     },
     {
-      label: 'Words Learned',
-      value: state.progress?.wordsCompleted?.length || 0,
-      icon: BookOpen,
+      label: 'Sentences Practiced',
+      value: realProgress?.totalSentencesPracticed || 0,
+      icon: Mic,
       color: '#4ecdc4'
     },
     {
-      label: 'Phonemes Mastered',
-      value: state.progress?.phonemesLearned?.length || 0,
-      icon: Award,
+      label: 'Average Accuracy',
+      value: Math.round(realProgress?.averageAccuracy || 0),
+      icon: TrendingUp,
       color: '#45b7d1'
     }
   ];
@@ -284,3 +297,4 @@ const Home = () => {
 };
 
 export default Home;
+

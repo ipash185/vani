@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Trophy, 
@@ -8,13 +8,27 @@ import {
   Award,
   TrendingUp,
   BookOpen,
-  Mic
+  Mic,
+  BarChart3,
+  Clock,
+  CheckCircle
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { CORE_WORDS } from '../data/phonemes';
+import progressService from '../services/progressService';
 
 const Progress = () => {
   const { state } = useApp();
+  const [realProgress, setRealProgress] = useState(null);
+  const [statistics, setStatistics] = useState(null);
+
+  // Load real progress data
+  useEffect(() => {
+    const currentProgress = progressService.getProgress();
+    const currentStats = progressService.getStatistics();
+    setRealProgress(currentProgress);
+    setStatistics(currentStats);
+  }, []);
 
   const progress = state.progress || {};
   const totalPhonemes = 12; // Total phonemes in the system
@@ -22,77 +36,146 @@ const Progress = () => {
 
   const achievements = [
     {
-      id: 'first_phoneme',
-      title: 'First Phoneme',
-      description: 'Learned your first phoneme',
+      id: 'first_session',
+      title: 'First Session',
+      description: 'Completed your first practice session',
       icon: '🎯',
-      unlocked: progress.phonemesLearned?.length > 0,
-      date: '2024-01-15'
+      unlocked: realProgress?.totalSessions > 0,
+      date: realProgress?.lastSessionDate ? new Date(realProgress.lastSessionDate).toLocaleDateString() : null
     },
     {
-      id: 'phoneme_master',
-      title: 'Phoneme Master',
-      description: 'Learned 5 phonemes',
+      id: 'sentence_practitioner',
+      title: 'Sentence Practitioner',
+      description: 'Practiced 5 sentences',
       icon: '🏆',
-      unlocked: progress.phonemesLearned?.length >= 5,
-      date: '2024-01-20'
+      unlocked: realProgress?.totalSentencesPracticed >= 5,
+      date: realProgress?.totalSentencesPracticed >= 5 ? 'Recently' : null
     },
     {
-      id: 'word_builder',
-      title: 'Word Builder',
-      description: 'Completed your first word',
+      id: 'accuracy_master',
+      title: 'Accuracy Master',
+      description: 'Achieved 80% average accuracy',
       icon: '📚',
-      unlocked: progress.wordsCompleted?.length > 0,
-      date: '2024-01-18'
+      unlocked: realProgress?.averageAccuracy >= 80,
+      date: realProgress?.averageAccuracy >= 80 ? 'Recently' : null
     },
     {
       id: 'streak_keeper',
       title: 'Streak Keeper',
-      description: 'Maintained a 7-day streak',
+      description: 'Maintained a 3-day streak',
       icon: '🔥',
-      unlocked: progress.streak >= 7,
-      date: '2024-01-25'
+      unlocked: realProgress?.streak >= 3,
+      date: realProgress?.streak >= 3 ? 'Recently' : null
+    },
+    {
+      id: 'ai_explorer',
+      title: 'AI Explorer',
+      description: 'Used AI-generated sentences',
+      icon: '🤖',
+      unlocked: realProgress?.isUsingAISentences || false,
+      date: realProgress?.isUsingAISentences ? 'Recently' : null
+    },
+    {
+      id: 'dedicated_learner',
+      title: 'Dedicated Learner',
+      description: 'Completed 10 practice sessions',
+      icon: '⭐',
+      unlocked: realProgress?.totalSessions >= 10,
+      date: realProgress?.totalSessions >= 10 ? 'Recently' : null
     }
   ];
 
-  const weeklyProgress = [
-    { day: 'Mon', phonemes: 2, words: 1 },
-    { day: 'Tue', phonemes: 3, words: 2 },
-    { day: 'Wed', phonemes: 1, words: 1 },
-    { day: 'Thu', phonemes: 4, words: 3 },
-    { day: 'Fri', phonemes: 2, words: 2 },
-    { day: 'Sat', phonemes: 3, words: 1 },
-    { day: 'Sun', phonemes: 1, words: 1 }
-  ];
+  // Generate weekly progress from real data
+// In Progress.js
+
+  // Generate weekly progress from real data
+  const generateWeeklyProgress = () => {
+    const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    // Helper function to get all dates (YYYY-MM-DD) for the current week
+    const getWeekDates = () => {
+      const today = new Date();
+      const week = [];
+      const startOfWeek = new Date(today);
+      // Set to the Sunday of the current week
+      startOfWeek.setDate(today.getDate() - today.getDay()); 
+      
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(startOfWeek);
+        date.setDate(startOfWeek.getDate() + i);
+        week.push(date.toISOString().split('T')[0]);
+      }
+      return week;
+    };
+
+    const currentWeekDates = getWeekDates();
+
+    // Use a Map for efficient data aggregation
+    const weeklyDataMap = new Map();
+    currentWeekDates.forEach((date, index) => {
+      weeklyDataMap.set(date, {
+        day: weekDays[index],
+        sessions: 0,
+        totalAccuracy: 0,
+        count: 0,
+      });
+    });
+
+    if (realProgress?.sentenceHistory) {
+      // 1. Filter history to only include sessions from the current week
+      const thisWeekHistory = realProgress.sentenceHistory.filter(session =>
+        currentWeekDates.includes(session.date)
+      );
+      
+      thisWeekHistory.forEach(session => {
+        const dayData = weeklyDataMap.get(session.date);
+        if (dayData) {
+          dayData.sessions += 1;
+          dayData.totalAccuracy += session.accuracy;
+          dayData.count += 1;
+        }
+      });
+    }
+    
+    // Convert the map to an array and calculate the final average accuracy
+    return Array.from(weeklyDataMap.values()).map(data => ({
+      day: data.day,
+      sessions: data.sessions,
+      // 2. Correctly calculate average accuracy
+      accuracy: data.count > 0 ? Math.round(data.totalAccuracy / data.count) : 0,
+    }));
+  };
+
+  const weeklyProgress = generateWeeklyProgress();
 
   const stats = [
     {
-      label: 'Total Points',
-      value: progress.totalPoints || 0,
-      icon: Star,
+      label: 'Total Sessions',
+      value: realProgress?.totalSessions || 0,
+      icon: BarChart3,
       color: '#ffd700',
-      change: '+25 this week'
+      change: `+${statistics?.thisWeekSessions || 0} this week`
     },
     {
       label: 'Current Streak',
-      value: progress.streak || 0,
+      value: realProgress?.streak || 0,
       icon: Target,
       color: '#ff6b6b',
       change: 'days'
     },
     {
-      label: 'Phonemes Learned',
-      value: progress.phonemesLearned?.length || 0,
-      icon: BookOpen,
+      label: 'Sentences Practiced',
+      value: realProgress?.totalSentencesPracticed || 0,
+      icon: Mic,
       color: '#4ecdc4',
-      change: `of ${totalPhonemes}`
+      change: 'total'
     },
     {
-      label: 'Words Completed',
-      value: progress.wordsCompleted?.length || 0,
-      icon: Mic,
+      label: 'Average Accuracy',
+      value: Math.round(realProgress?.averageAccuracy || 0),
+      icon: TrendingUp,
       color: '#45b7d1',
-      change: `of ${totalWords}`
+      change: '%'
     }
   ];
 
@@ -149,14 +232,14 @@ const Progress = () => {
                 <div className="day-label">{day.day}</div>
                 <div className="day-bars">
                   <div 
-                    className="phoneme-bar"
-                    style={{ height: `${(day.phonemes / 5) * 100}%` }}
-                    title={`${day.phonemes} phonemes`}
+                    className="session-bar"
+                    style={{ height: `${Math.min((day.sessions / 3) * 100, 100)}%` }}
+                    title={`${day.sessions} sessions`}
                   />
                   <div 
-                    className="word-bar"
-                    style={{ height: `${(day.words / 3) * 100}%` }}
-                    title={`${day.words} words`}
+                    className="accuracy-bar"
+                    style={{ height: `${day.accuracy}%` }}
+                    title={`${day.accuracy}% accuracy`}
                   />
                 </div>
               </motion.div>
@@ -164,12 +247,12 @@ const Progress = () => {
           </div>
           <div className="chart-legend">
             <div className="legend-item">
-              <div className="legend-color phoneme-color"></div>
-              <span>Phonemes</span>
+              <div className="legend-color session-color"></div>
+              <span>Sessions</span>
             </div>
             <div className="legend-item">
-              <div className="legend-color word-color"></div>
-              <span>Words</span>
+              <div className="legend-color accuracy-color"></div>
+              <span>Accuracy %</span>
             </div>
           </div>
         </div>
@@ -209,6 +292,42 @@ const Progress = () => {
             ))}
           </div>
         </div>
+
+        {/* Recent Activity */}
+        {realProgress?.sentenceHistory && realProgress.sentenceHistory.length > 0 && (
+          <div className="recent-activity">
+            <h2>Recent Activity</h2>
+            <div className="activity-list">
+              {realProgress.sentenceHistory.slice(-5).reverse().map((session, index) => (
+                <motion.div
+                  key={index}
+                  className="activity-item"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <div className="activity-icon">
+                    <CheckCircle size={20} />
+                  </div>
+                  <div className="activity-content">
+                    <div className="activity-sentence">"{session.sentence}"</div>
+                    <div className="activity-details">
+                      <span className="accuracy">{Math.round(session.accuracy)}% accuracy</span>
+                      <span className="date">{new Date(session.timestamp).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                  <div className="activity-score">
+                    <div className="score-circle" style={{ 
+                      background: `conic-gradient(#4ecdc4 ${session.accuracy * 3.6}deg, #e2e8f0 0deg)` 
+                    }}>
+                      <span>{Math.round(session.accuracy)}%</span>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Learning Path */}
         <div className="learning-path">
@@ -285,3 +404,4 @@ const Progress = () => {
 };
 
 export default Progress;
+
