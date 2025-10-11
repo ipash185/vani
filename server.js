@@ -133,7 +133,110 @@ app.post('/api/generate-sentences', async (req, res) => {
     }
   });
 
-// ------------------- MODIFIED FUNCTION -------------------
+// Generate practice words using OpenRouter API
+app.post('/api/generate-words', async (req, res) => {
+  try {
+    const { progress } = req.body;
+    
+    if (!OPENROUTER_API_KEY) {
+      return res.status(500).json({ 
+        error: 'OpenRouter API key is not set. Please check your .env file and restart the server.' 
+      });
+    }
+
+    const prompt = `You are a speech therapist helping a hearing-impaired child learn to speak. 
+    
+Current progress: ${JSON.stringify(progress, null, 2)}
+
+Generate exactly 8 new practice words that are:
+1. Essential words for daily communication
+2. Appropriate for their current skill level
+3. Focused on practical communication needs
+4. Simple but meaningful words
+5. Progressive in difficulty
+6. Include phonemes they need to practice
+
+Return ONLY a JSON array of 8 word objects, each with id, word, phonemes, meaning, priority, and examples. Example format:
+[
+  {"id": "water", "word": "water", "phonemes": ["w", "a", "t", "e", "r"], "meaning": "Clear liquid for drinking", "priority": 1, "examples": ["I want water", "water please", "cold water"]},
+  {"id": "food", "word": "food", "phonemes": ["f", "o", "o", "d"], "meaning": "Something to eat", "priority": 2, "examples": ["I want food", "food please", "good food"]}
+]`;
+
+    const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
+      model: 'mistralai/mistral-7b-instruct:free',
+      messages: [
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 800
+    }, {
+      headers: {
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'http://localhost:3000',
+        'X-Title': 'Vani Speech Practice'
+      }
+    });
+    // console.log(response.data.choices[0].message.content.trim());
+    let generatedText = response.data.choices[0].message.content.trim();
+
+    // 1️⃣ Remove markdown and instruction wrappers
+    generatedText = generatedText
+      .replace(/```json/g, '')
+      .replace(/```/g, '')
+      .replace(/\[B_INST\]|\[\/B_INST\]/g, '')
+      .replace(/<s>/g, '')
+      .replace(/<\/s>/g, '')
+      .trim();
+    
+    // 2️⃣ Extract all JSON-like arrays (sometimes multiple <s> blocks)
+    const allMatches = generatedText.match(/\[\s*\{[\s\S]*?\}\s*\]/g);
+    
+    if (!allMatches || allMatches.length === 0) {
+      console.error('Could not find JSON array in response:', generatedText);
+      throw new Error('No valid JSON array found in AI response');
+    }
+    
+    // 3️⃣ Try parsing the *largest* valid JSON array
+    let words = null;
+    for (const candidate of allMatches.reverse()) {
+      try {
+        const parsed = JSON.parse(candidate);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          words = parsed;
+          break;
+        }
+      } catch (_) { /* try next */ }
+    }
+    
+    if (!words) {
+      console.error('Failed to parse any valid JSON array:', generatedText);
+      throw new Error('Could not parse generated words');
+    }
+    
+    // 4️⃣ Optionally ensure exactly 8 entries
+    if (words.length !== 8) {
+      console.warn(`Expected 8 words, got ${words.length}. Trimming or regenerating.`);
+      words = words.slice(0, 8);
+    }
+    
+
+    res.json({
+      words: words,
+      generatedAt: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Word generation error:', error.response ? error.response.data : error.message);
+    res.status(500).json({ 
+      error: 'Failed to generate practice words',
+      details: error.response ? error.response.data : error.message
+    });
+  }
+});
 
 // AssemblyAI transcription endpoint
 app.post('/api/transcribe', upload.single('audio'), async (req, res) => {
@@ -258,6 +361,56 @@ app.post('/api/analyze', async (req, res) => {
   } catch (error) {
     console.error('Analysis error:', error);
     res.status(500).json({ error: 'Analysis failed' });
+  }
+});
+
+// Word analysis endpoint using Python scorer
+app.post('/api/analyze-word', async (req, res) => {
+  try {
+    const { target, spoken } = req.body;
+    
+    if (!target || !spoken) {
+      return res.status(400).json({ error: 'Both target and spoken text are required' });
+    }
+
+    // Run Python scorer for word analysis
+    const pythonProcess = spawn('python3', ['scorer.py', '--json'], {
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+
+    const inputData = JSON.stringify({ target, spoken });
+    pythonProcess.stdin.write(inputData);
+    pythonProcess.stdin.end();
+
+    let output = '';
+    let errorOutput = '';
+
+    pythonProcess.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+
+    pythonProcess.stderr.on('data', (data) => {
+      errorOutput += data.toString();
+    });
+
+    pythonProcess.on('close', (code) => {
+      if (code !== 0) {
+        console.error('Python process error:', errorOutput);
+        return res.status(500).json({ error: 'Word analysis failed' });
+      }
+
+      try {
+        const result = JSON.parse(output);
+        res.json(result);
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        res.status(500).json({ error: 'Failed to parse word analysis results' });
+      }
+    });
+
+  } catch (error) {
+    console.error('Word analysis error:', error);
+    res.status(500).json({ error: 'Word analysis failed' });
   }
 });
 

@@ -12,9 +12,11 @@ class ProgressService {
       const initialProgress = {
         totalSessions: 0,
         totalSentencesPracticed: 0,
+        totalWordsPracticed: 0,
         averageAccuracy: 0,
         lastSessionDate: null,
         sentenceHistory: [],
+        wordHistory: [],
         currentSentences: [
           "I need help please",
           "Yes, I can do that", 
@@ -22,7 +24,18 @@ class ProgressService {
           "Please stop that",
           "I am done eating"
         ],
+        currentWords: [
+          { id: 'help', word: 'help', phonemes: ['h', 'e', 'l', 'p'], meaning: 'To ask for assistance', priority: 1, examples: ['help me', 'I need help', 'can you help?'] },
+          { id: 'yes', word: 'yes', phonemes: ['y', 'e', 's'], meaning: 'Agreement or confirmation', priority: 2, examples: ['yes please', 'yes I can', 'yes that\'s right'] },
+          { id: 'no', word: 'no', phonemes: ['n', 'o'], meaning: 'Disagreement or refusal', priority: 3, examples: ['no thank you', 'no I can\'t', 'no problem'] },
+          { id: 'stop', word: 'stop', phonemes: ['s', 't', 'o', 'p'], meaning: 'To halt or cease', priority: 4, examples: ['stop please', 'stop that', 'stop here'] },
+          { id: 'more', word: 'more', phonemes: ['m', 'o', 'r'], meaning: 'Additional quantity', priority: 5, examples: ['more please', 'I want more', 'more food'] },
+          { id: 'done', word: 'done', phonemes: ['d', 'o', 'n'], meaning: 'Completed or finished', priority: 6, examples: ['I\'m done', 'all done', 'done eating'] },
+          { id: 'hot', word: 'hot', phonemes: ['h', 'o', 't'], meaning: 'High temperature', priority: 7, examples: ['it\'s hot', 'hot water', 'too hot'] },
+          { id: 'please', word: 'please', phonemes: ['p', 'l', 'e', 's'], meaning: 'Polite request', priority: 8, examples: ['please help', 'please stop', 'please more'] }
+        ],
         isUsingAISentences: false,
+        isUsingAIWords: false,
         streak: 0,
         lastPracticeDate: null
       };
@@ -96,6 +109,58 @@ class ProgressService {
     return progress;
   }
 
+  // Update word progress after a practice session
+  updateWordProgress(word, accuracy, clarity, speed) {
+    const progress = this.getProgress();
+    if (!progress) return;
+
+    const today = new Date().toISOString().split('T')[0];
+    const lastDate = progress.lastPracticeDate;
+
+    // Update streak
+    if (lastDate === today) {
+      // Already practiced today, no streak change
+    } else if (lastDate && this.isConsecutiveDay(lastDate, today)) {
+      progress.streak += 1;
+    } else {
+      progress.streak = 1;
+    }
+
+    // Update session data
+    progress.totalSessions += 1;
+    progress.totalWordsPracticed += 1;
+    progress.lastSessionDate = new Date().toISOString();
+    progress.lastPracticeDate = today;
+
+    // Add to word history
+    progress.wordHistory.push({
+      word: word.word,
+      wordId: word.id,
+      accuracy,
+      clarity,
+      speed,
+      timestamp: new Date().toISOString(),
+      date: today
+    });
+
+    // Keep only last 50 word practice sessions
+    if (progress.wordHistory.length > 50) {
+      progress.wordHistory = progress.wordHistory.slice(-50);
+    }
+
+    // Update average accuracy based on both sentence and word practice
+    const recentSentenceSessions = progress.sentenceHistory.slice(-5);
+    const recentWordSessions = progress.wordHistory.slice(-5);
+    const allRecentSessions = [...recentSentenceSessions, ...recentWordSessions];
+    
+    if (allRecentSessions.length > 0) {
+      progress.averageAccuracy = allRecentSessions.reduce((sum, session) => sum + session.accuracy, 0) / allRecentSessions.length;
+    }
+
+    this.saveProgress(progress);
+    return progress;
+  }
+
   // Check if two dates are consecutive days
   isConsecutiveDay(date1, date2) {
     const d1 = new Date(date1);
@@ -116,6 +181,17 @@ class ProgressService {
     return progress;
   }
 
+  // Update current words (when AI generates new ones)
+  updateCurrentWords(words) {
+    const progress = this.getProgress();
+    if (!progress) return;
+
+    progress.currentWords = words;
+    progress.isUsingAIWords = true;
+    this.saveProgress(progress);
+    return progress;
+  }
+
   // Get progress summary for AI
   getProgressSummary() {
     const progress = this.getProgress();
@@ -124,10 +200,13 @@ class ProgressService {
     return {
       totalSessions: progress.totalSessions,
       totalSentencesPracticed: progress.totalSentencesPracticed,
+      totalWordsPracticed: progress.totalWordsPracticed,
       averageAccuracy: Math.round(progress.averageAccuracy),
       streak: progress.streak,
       recentSessions: progress.sentenceHistory.slice(-5), // Last 5 sessions
+      recentWordSessions: progress.wordHistory.slice(-5), // Last 5 word sessions
       isUsingAISentences: progress.isUsingAISentences,
+      isUsingAIWords: progress.isUsingAIWords,
       lastSessionDate: progress.lastSessionDate
     };
   }
@@ -146,9 +225,15 @@ class ProgressService {
     const today = new Date().toISOString().split('T')[0];
     const thisWeek = this.getWeekDates();
     
-    const thisWeekSessions = progress.sentenceHistory.filter(session => 
+    const thisWeekSentenceSessions = progress.sentenceHistory.filter(session => 
       thisWeek.includes(session.date)
     );
+
+    const thisWeekWordSessions = progress.wordHistory.filter(session => 
+      thisWeek.includes(session.date)
+    );
+
+    const thisWeekSessions = [...thisWeekSentenceSessions, ...thisWeekWordSessions];
 
     const thisWeekAccuracy = thisWeekSessions.length > 0 
       ? thisWeekSessions.reduce((sum, session) => sum + session.accuracy, 0) / thisWeekSessions.length
@@ -157,6 +242,7 @@ class ProgressService {
     return {
       totalSessions: progress.totalSessions,
       totalSentencesPracticed: progress.totalSentencesPracticed,
+      totalWordsPracticed: progress.totalWordsPracticed,
       averageAccuracy: Math.round(progress.averageAccuracy),
       streak: progress.streak,
       thisWeekSessions: thisWeekSessions.length,
@@ -183,3 +269,4 @@ class ProgressService {
 }
 
 export default new ProgressService();
+

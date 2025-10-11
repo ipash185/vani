@@ -122,12 +122,28 @@ const Progress = () => {
     });
 
     if (realProgress?.sentenceHistory) {
-      // 1. Filter history to only include sessions from the current week
-      const thisWeekHistory = realProgress.sentenceHistory.filter(session =>
+      // 1. Filter sentence history to only include sessions from the current week
+      const thisWeekSentenceHistory = realProgress.sentenceHistory.filter(session =>
         currentWeekDates.includes(session.date)
       );
       
-      thisWeekHistory.forEach(session => {
+      thisWeekSentenceHistory.forEach(session => {
+        const dayData = weeklyDataMap.get(session.date);
+        if (dayData) {
+          dayData.sessions += 1;
+          dayData.totalAccuracy += session.accuracy;
+          dayData.count += 1;
+        }
+      });
+    }
+
+    if (realProgress?.wordHistory) {
+      // 2. Filter word history to only include sessions from the current week
+      const thisWeekWordHistory = realProgress.wordHistory.filter(session =>
+        currentWeekDates.includes(session.date)
+      );
+      
+      thisWeekWordHistory.forEach(session => {
         const dayData = weeklyDataMap.get(session.date);
         if (dayData) {
           dayData.sessions += 1;
@@ -168,6 +184,13 @@ const Progress = () => {
       value: realProgress?.totalSentencesPracticed || 0,
       icon: Mic,
       color: '#4ecdc4',
+      change: 'total'
+    },
+    {
+      label: 'Words Practiced',
+      value: realProgress?.totalWordsPracticed || 0,
+      icon: BookOpen,
+      color: '#9b59b6',
       change: 'total'
     },
     {
@@ -294,37 +317,49 @@ const Progress = () => {
         </div>
 
         {/* Recent Activity */}
-        {realProgress?.sentenceHistory && realProgress.sentenceHistory.length > 0 && (
+        {((realProgress?.sentenceHistory && realProgress.sentenceHistory.length > 0) || 
+          (realProgress?.wordHistory && realProgress.wordHistory.length > 0)) && (
           <div className="recent-activity">
             <h2>Recent Activity</h2>
             <div className="activity-list">
-              {realProgress.sentenceHistory.slice(-5).reverse().map((session, index) => (
-                <motion.div
-                  key={index}
-                  className="activity-item"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <div className="activity-icon">
-                    <CheckCircle size={20} />
-                  </div>
-                  <div className="activity-content">
-                    <div className="activity-sentence">"{session.sentence}"</div>
-                    <div className="activity-details">
-                      <span className="accuracy">{Math.round(session.accuracy)}% accuracy</span>
-                      <span className="date">{new Date(session.timestamp).toLocaleDateString()}</span>
+              {(() => {
+                // Combine sentence and word history, sort by timestamp, and take last 5
+                const allHistory = [
+                  ...(realProgress.sentenceHistory || []).map(session => ({ ...session, type: 'sentence' })),
+                  ...(realProgress.wordHistory || []).map(session => ({ ...session, type: 'word' }))
+                ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 5);
+
+                return allHistory.map((session, index) => (
+                  <motion.div
+                    key={`${session.type}-${index}`}
+                    className="activity-item"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <div className="activity-icon">
+                      <CheckCircle size={20} />
                     </div>
-                  </div>
-                  <div className="activity-score">
-                    <div className="score-circle" style={{ 
-                      background: `conic-gradient(#4ecdc4 ${session.accuracy * 3.6}deg, #e2e8f0 0deg)` 
-                    }}>
-                      <span>{Math.round(session.accuracy)}%</span>
+                    <div className="activity-content">
+                      <div className="activity-text">
+                        {session.type === 'sentence' ? `"${session.sentence}"` : `Word: "${session.word}"`}
+                      </div>
+                      <div className="activity-details">
+                        <span className="accuracy">{Math.round(session.accuracy)}% accuracy</span>
+                        <span className="date">{new Date(session.timestamp).toLocaleDateString()}</span>
+                        <span className="type">{session.type}</span>
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
+                    <div className="activity-score">
+                      <div className="score-circle" style={{ 
+                        background: `conic-gradient(${session.type === 'sentence' ? '#4ecdc4' : '#9b59b6'} ${session.accuracy * 3.6}deg, #e2e8f0 0deg)` 
+                      }}>
+                        <span>{Math.round(session.accuracy)}%</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                ));
+              })()}
             </div>
           </div>
         )}

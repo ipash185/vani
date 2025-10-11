@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // --- CHANGE 1 ---
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -14,11 +14,24 @@ import {
   Star
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import progressService from '../services/progressService'; // --- CHANGE 2 ---
 
 const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
   const { state } = useApp();
+  // --- CHANGE 3: State for the dynamic practice link ---
+  const [practiceLink, setPracticeLink] = useState('/word/help'); 
+
+  // --- CHANGE 4: Effect to update the link dynamically ---
+  useEffect(() => {
+    const progress = progressService.getProgress();
+    if (progress && progress.currentWords && progress.currentWords.length > 0) {
+      const firstWordId = progress.currentWords[0].id;
+      setPracticeLink(`/word/${firstWordId}`);
+    }
+    // This effect runs when the user navigates, ensuring the link is fresh
+  }, [location]);
 
   const handleLogout = () => {
     localStorage.removeItem('vani_user');
@@ -30,7 +43,8 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
   const navItems = [
     { path: '/', icon: Home, label: 'Home' },
     { path: '/phoneme/h', icon: BookOpen, label: 'Learn' },
-    { path: '/word/help', icon: Mic, label: 'Practice' },
+    // --- CHANGE 5: Use the dynamic practiceLink state variable ---
+    { path: practiceLink, icon: Mic, label: 'Practice' },
     { path: '/sentence', icon: BarChart3, label: 'Sentences' },
     { path: '/progress', icon: Trophy, label: 'Progress' }
   ];
@@ -61,11 +75,14 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
         <div className="navbar-nav">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname === item.path;
+            // Use startsWith for the practice link to keep it active for any word
+            const isActive = item.label === 'Practice' 
+              ? location.pathname.startsWith('/word') 
+              : location.pathname === item.path;
             
             return (
               <Link
-                key={item.path}
+                key={item.label} // Use label as key for stability
                 to={item.path}
                 className={`navbar-link ${isActive ? 'active' : ''}`}
               >
@@ -86,24 +103,17 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
 
         {/* User Info & Actions */}
         <div className="navbar-actions">
-          {/* Points Display */}
           <div className="points-display">
             <Star className="points-icon" size={16} />
             <span>{state.progress?.totalPoints || 0}</span>
           </div>
-
-          {/* Streak Display */}
           <div className="streak-display">
             <Trophy className="streak-icon" size={16} />
             <span>{state.progress?.streak || 0}</span>
           </div>
-
-          {/* Settings */}
           <Link to="/settings" className="navbar-action-btn">
             <Settings size={20} />
           </Link>
-
-          {/* Logout */}
           <button 
             onClick={handleLogout}
             className="navbar-action-btn logout-btn"
@@ -111,8 +121,6 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
           >
             <LogOut size={20} />
           </button>
-
-          {/* Mobile Menu Button */}
           <button
             className="mobile-menu-btn"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -154,4 +162,3 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
 };
 
 export default Navbar;
-
