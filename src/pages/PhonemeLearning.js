@@ -14,6 +14,7 @@ import {
   Trophy,
   Star
 } from 'lucide-react';
+import axios from 'axios';
 import { useApp } from '../context/AppContext';
 import { PHONEME_DATA, DIFFICULTY_LEVELS } from '../data/phonemes';
 
@@ -27,10 +28,16 @@ const PhonemeLearning = () => {
   const [accuracy, setAccuracy] = useState(0);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [lastPrediction, setLastPrediction] = useState(null);
+  const [recordingDuration, setRecordingDuration] = useState(0);
   
   const mediaRecorderRef = useRef(null);
   const audioRef = useRef(null);
   const animationRef = useRef(null);
+  const recordedChunksRef = useRef([]);
+  const recordingTimerRef = useRef(null);
+  const durationTimerRef = useRef(null);
 
   const phoneme = PHONEME_DATA[phonemeId];
   const difficulty = DIFFICULTY_LEVELS[phoneme.difficulty];
@@ -63,41 +70,128 @@ const PhonemeLearning = () => {
     if (state.progress?.phonemesLearned?.includes(phonemeId)) {
       setIsCompleted(true);
     }
+    
+    // Cleanup function to clear timers on unmount
+    return () => {
+      if (recordingTimerRef.current) {
+        clearTimeout(recordingTimerRef.current);
+      }
+      if (durationTimerRef.current) {
+        clearInterval(durationTimerRef.current);
+      }
+    };
   }, [phonemeId, state.progress]);
+
 
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream);
+      recordedChunksRef.current = [];
+      
+      // Set recording duration to 2 seconds for phoneme recording
+      const duration = 2000;
+      setRecordingDuration(0);
       
       mediaRecorderRef.current.ondataavailable = (event) => {
-        // Handle recorded audio data
-        console.log('Audio data available');
+        if (event.data.size > 0) {
+          recordedChunksRef.current.push(event.data);
+        }
+      };
+      
+      mediaRecorderRef.current.onstop = () => {
+        const audioBlob = new Blob(recordedChunksRef.current, { type: 'audio/webm' });
+        classifyPhoneme(audioBlob);
       };
       
       mediaRecorderRef.current.start();
       setIsRecording(true);
+      
+      // Update duration for UI display
+      durationTimerRef.current = setInterval(() => {
+        setRecordingDuration(prev => prev + 100);
+      }, 100);
+      
+      // Auto-stop after 2 seconds
+      recordingTimerRef.current = setTimeout(() => {
+        stopRecording();
+      }, duration);
+      
     } catch (error) {
       console.error('Error accessing microphone:', error);
+      alert('Error accessing microphone. Please check your permissions.');
     }
   };
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
+    // CORRECTED: Instead of checking the potentially stale `isRecording` state,
+    // we check the actual state of the MediaRecorder instance. This is the
+    // source of truth and avoids the stale closure problem.
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
+      setIsProcessing(true);
       
-      // Simulate accuracy calculation
-      const simulatedAccuracy = Math.random() * 40 + 60; // 60-100%
-      setAccuracy(simulatedAccuracy);
-      setShowFeedback(true);
-      setPracticeCount(prev => prev + 1);
-      
-      // Check if practice is complete
-      if (practiceCount >= 4) {
-        actions.completePhoneme(phonemeId);
-        setIsCompleted(true);
+      // Clear timers
+      if (recordingTimerRef.current) {
+        clearTimeout(recordingTimerRef.current);
+        recordingTimerRef.current = null;
       }
+      if (durationTimerRef.current) {
+        clearInterval(durationTimerRef.current);
+        durationTimerRef.current = null;
+      }
+      
+      // Stop all tracks to release microphone
+      if (mediaRecorderRef.current.stream) {
+        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      }
+    }
+  };
+
+  const classifyPhoneme = async (audioBlob) => {
+    try {
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'recording.webm');
+
+      const response = await axios.post('http://localhost:5000/api/classify-phoneme', formData);
+
+      console.log('response', response);
+      const result = await response.data;
+      setIsProcessing(false);
+
+      if (result.success) {
+        const predictedPhoneme = result.phoneme;
+        const confidence = result.confidence_percentage;
+        
+        // Calculate accuracy based on whether the predicted phoneme matches the target
+        const isCorrect = predictedPhoneme.toLowerCase() === phonemeId.toLowerCase();
+        const calculatedAccuracy = isCorrect ? Math.max(confidence, 80) : Math.min(confidence, 60);
+        
+        setAccuracy(calculatedAccuracy);
+        setLastPrediction({
+          predicted: predictedPhoneme,
+          target: phonemeId,
+          confidence: confidence,
+          isCorrect: isCorrect
+        });
+        setShowFeedback(true);
+        setPracticeCount(prev => prev + 1);
+        
+        // Check if practice is complete
+        if (practiceCount >= 4) {
+          actions.completePhoneme(phonemeId);
+          setIsCompleted(true);
+        }
+      } else {
+        console.error('Classification failed:', result.error);
+        alert('Classification failed: ' + result.error);
+        setIsProcessing(false);
+      }
+    } catch (error) {
+      console.error('Error classifying phoneme:', error);
+      alert('Error processing audio. Please try again.');
+      setIsProcessing(false);
     }
   };
 
@@ -126,7 +220,21 @@ const PhonemeLearning = () => {
     setAccuracy(0);
     setShowFeedback(false);
     setIsCompleted(false);
+    setLastPrediction(null);
+    setIsProcessing(false);
+    setRecordingDuration(0);
+    
+    // Clear any active timers
+    if (recordingTimerRef.current) {
+      clearTimeout(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+    if (durationTimerRef.current) {
+      clearInterval(durationTimerRef.current);
+      durationTimerRef.current = null;
+    }
   };
+
 
   const VisualGuide = () => (
     <div className="visual-guide">
@@ -215,13 +323,20 @@ const PhonemeLearning = () => {
         <p>Repeat the sound after listening</p>
         
         <motion.button
-          className={`record-button ${isRecording ? 'recording' : ''}`}
+          className={`record-button ${isRecording ? 'recording' : ''} ${isProcessing ? 'processing' : ''}`}
           onClick={isRecording ? stopRecording : startRecording}
+          disabled={isProcessing}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
-          {isRecording ? <MicOff size={24} /> : <Mic size={24} />}
-          {isRecording ? 'Stop Recording' : 'Start Recording'}
+          {isProcessing ? (
+            <div className="spinner" />
+          ) : isRecording ? (
+            <MicOff size={24} />
+          ) : (
+            <Mic size={24} />
+          )}
+          {isProcessing ? 'Processing...' : isRecording ? `Recording... ${(2000 - recordingDuration) / 1000}s` : 'Start Recording'}
         </motion.button>
       </div>
     </div>
@@ -269,13 +384,20 @@ const PhonemeLearning = () => {
       
       <div className="recording-section">
         <motion.button
-          className={`record-button large ${isRecording ? 'recording' : ''}`}
+          className={`record-button large ${isRecording ? 'recording' : ''} ${isProcessing ? 'processing' : ''}`}
           onClick={isRecording ? stopRecording : startRecording}
+          disabled={isProcessing}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
-          {isRecording ? <MicOff size={32} /> : <Mic size={32} />}
-          {isRecording ? 'Stop Recording' : 'Record Phoneme'}
+          {isProcessing ? (
+            <div className="spinner" />
+          ) : isRecording ? (
+            <MicOff size={32} />
+          ) : (
+            <Mic size={32} />
+          )}
+          {isProcessing ? 'Processing...' : isRecording ? `Recording... ${(2000 - recordingDuration) / 1000}s` : 'Record Phoneme'}
         </motion.button>
         
         <div className="practice-stats">
@@ -296,7 +418,7 @@ const PhonemeLearning = () => {
       </div>
       
       <AnimatePresence>
-        {showFeedback && (
+        {showFeedback && lastPrediction && (
           <motion.div
             className="feedback-section"
             initial={{ opacity: 0, y: 20 }}
@@ -304,6 +426,24 @@ const PhonemeLearning = () => {
             exit={{ opacity: 0, y: -20 }}
           >
             <h4>Your Performance</h4>
+            
+            <div className="prediction-results">
+              <div className="prediction-item">
+                <span className="prediction-label">Target Phoneme:</span>
+                <span className="prediction-value target">{lastPrediction.target}</span>
+              </div>
+              <div className="prediction-item">
+                <span className="prediction-label">You Said:</span>
+                <span className={`prediction-value ${lastPrediction.isCorrect ? 'correct' : 'incorrect'}`}>
+                  {lastPrediction.predicted}
+                </span>
+              </div>
+              <div className="prediction-item">
+                <span className="prediction-label">Confidence:</span>
+                <span className="prediction-value confidence">{Math.round(lastPrediction.confidence)}%</span>
+              </div>
+            </div>
+            
             <div className="accuracy-display">
               <div className="accuracy-circle">
                 <span className="accuracy-value">{Math.round(accuracy)}%</span>
@@ -311,14 +451,14 @@ const PhonemeLearning = () => {
               <p className="accuracy-label">Pronunciation Accuracy</p>
             </div>
             
-            {accuracy >= 80 ? (
+            {lastPrediction.isCorrect ? (
               <div className="success-message">
                 <CheckCircle size={24} />
-                <span>Excellent! Keep practicing!</span>
+                <span>Excellent! You got it right!</span>
               </div>
             ) : (
               <div className="improvement-message">
-                <span>Good try! Practice more to improve.</span>
+                <span>Good try! The target was '{lastPrediction.target}', you said '{lastPrediction.predicted}'. Keep practicing!</span>
               </div>
             )}
           </motion.div>
@@ -481,5 +621,6 @@ const PhonemeLearning = () => {
 };
 
 export default PhonemeLearning;
+
 
 

@@ -15,6 +15,10 @@ const PORT = process.env.PORT || 5000;
 const ASSEMBLYAI_API_KEY = process.env.ASSEMBLYAI_API_KEY;
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
+// Global phoneme classifier instance
+let phonemeClassifier = null;
+let isModelLoaded = false;
+
 // Debug: Check if API keys are loaded
 console.log('Environment check:');
 console.log('- ASSEMBLYAI_API_KEY loaded:', ASSEMBLYAI_API_KEY ? 'Yes (length: ' + ASSEMBLYAI_API_KEY.length + ')' : 'No');
@@ -41,6 +45,40 @@ const upload = multer({ storage });
 // Ensure uploads directory exists
 if (!fs.existsSync('uploads')) {
   fs.mkdirSync('uploads');
+}
+
+// Initialize phoneme classifier
+function initializePhonemeClassifier() {
+  return new Promise((resolve, reject) => {
+    console.log('Initializing phoneme classifier...');
+    
+    const pythonProcess = spawn('python3', ['phoneme_classifier_service.py', 'dummy'], {
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+
+    let output = '';
+    let errorOutput = '';
+
+    pythonProcess.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+
+    pythonProcess.stderr.on('data', (data) => {
+      errorOutput += data.toString();
+    });
+
+    pythonProcess.on('close', (code) => {
+      // Check if model loaded successfully (even if there are warnings)
+      if (code === 0 || errorOutput.includes('Model loaded successfully') || errorOutput.includes('Loading the VAD-trained phoneme recognition model')) {
+        console.log('✓ Phoneme classifier initialized successfully');
+        isModelLoaded = true;
+        resolve();
+      } else {
+        console.error('✗ Failed to initialize phoneme classifier:', errorOutput);
+        reject(new Error('Failed to initialize phoneme classifier'));
+      }
+    });
+  });
 }
 
 // Health check endpoint
@@ -414,6 +452,95 @@ app.post('/api/analyze-word', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+
+// Phoneme classification endpoint
+app.post('/api/classify-phoneme', upload.single('audio'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No audio file provided' });
+  }
+
+  const audioFilePath = req.file.path;
+
+  try {
+    // Run Python phoneme classifier
+    const pythonProcess = spawn('python3', ['phoneme_classifier_service.py', audioFilePath], {
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+
+    let output = '';
+    let errorOutput = '';
+
+    pythonProcess.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+
+    pythonProcess.stderr.on('data', (data) => {
+      errorOutput += data.toString();
+    });
+
+    pythonProcess.on('close', (code) => {
+      // Clean up the uploaded file
+      if (fs.existsSync(audioFilePath)) {
+        fs.unlinkSync(audioFilePath);
+      }
+
+      if (code !== 0) {
+        console.error('Python phoneme classifier error:', errorOutput);
+        return res.status(500).json({ 
+          error: 'Phoneme classification failed',
+          details: errorOutput
+        });
+      }
+
+      try {
+        // Filter out non-JSON output (like print statements)
+        const jsonOutput = output.split('\n').find(line => {
+          try {
+            JSON.parse(line);
+            return true;
+          } catch {
+            return false;
+          }
+        });
+        
+        if (jsonOutput) {
+          const result = JSON.parse(jsonOutput);
+          res.json(result);
+        } else {
+          throw new Error('No valid JSON found in output');
+        }
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        console.error('Raw output:', output);
+        res.status(500).json({ error: 'Failed to parse phoneme classification results' });
+      }
+    });
+
+  } catch (error) {
+    console.error('Phoneme classification error:', error);
+    // Clean up file in case of an error during the process
+    if (fs.existsSync(audioFilePath)) {
+      fs.unlinkSync(audioFilePath);
+    }
+    res.status(500).json({ error: 'Phoneme classification failed' });
+  }
 });
+
+// Start server with phoneme classifier initialization
+async function startServer() {
+  try {
+    // Initialize phoneme classifier
+    await initializePhonemeClassifier();
+    
+    // Start the server
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+      console.log('✓ All services initialized successfully');
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+startServer();

@@ -1004,3 +1004,98 @@
   color: #4a5568;
 }
 
+/* Phoneme detection specific styles */
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.record-button.processing {
+  background: linear-gradient(135deg, #ffa726 0%, #ff7043 100%);
+  cursor: not-allowed;
+}
+
+.prediction-results {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  backdrop-filter: blur(10px);
+}
+
+.prediction-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.prediction-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.prediction-label {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.prediction-value {
+  font-weight: 700;
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-size: 1.1rem;
+}
+
+.prediction-value.target {
+  background: rgba(76, 175, 80, 0.2);
+  color: #4CAF50;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.prediction-value.correct {
+  background: rgba(76, 175, 80, 0.2);
+  color: #4CAF50;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.prediction-value.incorrect {
+  background: rgba(244, 67, 54, 0.2);
+  color: #F44336;
+  border: 1px solid rgba(244, 67, 54, 0.3);
+}
+
+.prediction-value.confidence {
+  background: rgba(33, 150, 243, 0.2);
+  color: #2196F3;
+  border: 1px solid rgba(33, 150, 243, 0.3);
+}
+
+.success-message {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #4CAF50;
+  font-weight: 600;
+  margin-top: 1rem;
+}
+
+.improvement-message {
+  color: #FF9800;
+  font-weight: 600;
+  margin-top: 1rem;
+  text-align: center;
+}
+
+
