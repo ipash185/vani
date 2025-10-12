@@ -549,7 +549,7 @@ const startAnalysisLoop = useCallback(() => {
     try {
       const formData = new FormData();
       formData.append('audio', audioBlob, 'recording.webm');
-      const response = await axios.post('http://localhost:5000/api/classify-phoneme', formData);
+      const response = await axios.post('https://vani-zyqj.onrender.com/api/classify-phoneme', formData);
       const result = response.data;
       
       setIsProcessing(false);
