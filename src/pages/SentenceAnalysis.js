@@ -113,7 +113,7 @@ const SentenceAnalysis = () => {
       formData.append("audio", audioBlob, filename);
 
       const response = await axios.post(
-        "http://localhost:5000/api/transcribe",
+        "https://vani-zyqj.onrender.com/api/transcribe",
         formData,
         {
           headers: {
@@ -147,7 +147,7 @@ const SentenceAnalysis = () => {
   const analyzeSentence = async (target, spoken, duration, confidence) => {
     setIsAnalyzing(true);
     try {
-      const response = await axios.post("http://localhost:5000/api/analyze", {
+      const response = await axios.post("https://vani-zyqj.onrender.com/api/analyze", {
         target,
         spoken,
       });
@@ -203,7 +203,7 @@ const SentenceAnalysis = () => {
     try {
       const progressSummary = progressService.getProgressSummary();
       const response = await axios.post(
-        "http://localhost:5000/api/generate-sentences",
+        "https://vani-zyqj.onrender.com/api/generate-sentences",
         {
           progress: progressSummary,
         }
@@ -566,3 +566,4 @@ const SentenceAnalysis = () => {
 };
 
 export default SentenceAnalysis;
+
