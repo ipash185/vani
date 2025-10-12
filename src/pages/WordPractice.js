@@ -206,7 +206,7 @@ const WordPractice = () => {
       formData.append("audio", audioBlob, filename);
 
       const response = await axios.post(
-        "http://localhost:5000/api/transcribe",
+        "https://vani-zyqj.onrender.com/api/transcribe",
         formData,
         {
           headers: {
@@ -234,7 +234,7 @@ const WordPractice = () => {
     setIsAnalyzing(true);
     try {
       const response = await axios.post(
-        "http://localhost:5000/api/analyze-word",
+        "https://vani-zyqj.onrender.com/api/analyze-word",
         {
           target: targetWord.word,
           spoken,
@@ -290,7 +290,7 @@ const WordPractice = () => {
     try {
       const progressSummary = progressService.getProgressSummary();
       const response = await axios.post(
-        "http://localhost:5000/api/generate-words",
+        "https://vani-zyqj.onrender.com/api/generate-words",
         {
           progress: progressSummary,
         }
@@ -683,3 +683,4 @@ const WordPractice = () => {
 };
 
 export default WordPractice;
+
