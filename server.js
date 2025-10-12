@@ -336,7 +336,7 @@ Return ONLY a JSON array of 9 word objects, each with id, word, phonemes, meanin
       throw new Error("Could not parse generated words");
     }
 
-    // 4️⃣ Optionally ensure exactly 8 entries
+    // 4️⃣ Optionally ensure exactly 9 entries
     if (words.length !== 9) {
       console.warn(
         `Expected 9 words, got ${words.length}. Trimming or regenerating.`
@@ -548,10 +548,6 @@ app.post("/api/analyze-word", async (req, res) => {
     console.error("Word analysis error:", error);
     res.status(500).json({ error: "Word analysis failed" });
   }
-});
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
 });
 
 // Phoneme classification endpoint

@@ -1,0 +1,82 @@
+.performance-plot-container {
+  background: #f7fafc;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  border: 1px solid #e2e8f0;
+}
+
+.performance-plot-container h4 {
+  font-size: 1.1rem;
+  color: #2d3748;
+  margin-bottom: 1rem;
+}
+
+.plot-area {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.grid-circle {
+  stroke: #e2e8f0;
+  stroke-width: 0.5;
+  fill: none;
+}
+
+.target-region {
+  fill: rgba(76, 175, 80, 0.2);
+  stroke: rgba(76, 175, 80, 0.5);
+  stroke-width: 1;
+}
+
+.axis-line {
+  stroke: #cbd5e0;
+  stroke-width: 0.5;
+}
+
+.axis-label {
+  font-size: 10px;
+  fill: #a0aec0;
+  font-family: sans-serif;
+  text-anchor: middle;
+}
+
+.performance-dot {
+  stroke: white;
+  stroke-width: 2;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
+}
+
+.performance-dot.in-target {
+  fill: #4caf50;
+}
+
+.performance-dot.out-of-target {
+  fill: #f44336;
+}
+
+.plot-legend {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  font-size: 0.8rem;
+  color: #4a5568;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.target-region-legend {
+  background-color: rgba(76, 175, 80, 0.3);
+  border: 1px solid rgba(76, 175, 80, 0.5);
+}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -21,406 +21,150 @@ import axios from 'axios';
 import { useApp } from '../context/AppContext';
 import { PHONEME_DATA, DIFFICULTY_LEVELS } from '../data/phonemes';
 
-const PhonemeLearning = () => {
-  const { phonemeId } = useParams();
-  const { state, actions } = useApp();
-  const navigate = useNavigate();
-  const [isRecording, setIsRecording] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [practiceCount, setPracticeCount] = useState(0);
-  const [accuracy, setAccuracy] = useState(0);
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [lastPrediction, setLastPrediction] = useState(null);
-  const [recordingDuration, setRecordingDuration] = useState(0);
-  
-  // Real-time feedback meters state
-  const [hMeterValue, setHMeterValue] = useState(0);
-  const [mMeterValue, setMMeterValue] = useState(0);
-  const [sMeterValue, setSMeterValue] = useState(0);
-  const [isRealTimeRecording, setIsRealTimeRecording] = useState(false);
-  
-  const mediaRecorderRef = useRef(null);
-  const audioRef = useRef(null);
-  const animationRef = useRef(null);
-  const recordedChunksRef = useRef([]);
-  const recordingTimerRef = useRef(null);
-  const durationTimerRef = useRef(null);
-  
-  // Real-time audio analysis refs
-  const audioContextRef = useRef(null);
-  const analyserRef = useRef(null);
-  const animationFrameRef = useRef(null);
+// A key for storing all phoneme progress in localStorage
+const PROGRESS_STORAGE_KEY = 'phonemeProgress';
 
-  // Available phonemes for learning
-  const availablePhonemes = ['h', 'l', 'p', 'eh'];
-  
-  const phoneme = phonemeId ? PHONEME_DATA[phonemeId] : null;
-  const difficulty = phoneme ? DIFFICULTY_LEVELS[phoneme.difficulty] : null;
+/**
+ * Retrieves progress for a specific phoneme from localStorage.
+ * @param {string} phonemeId - The ID of the phoneme (e.g., 'h').
+ * @returns {{ accuracy: number, practiceCount: number }}
+ */
+const getStoredProgress = (phonemeId) => {
+  try {
+    const allProgress = JSON.parse(localStorage.getItem(PROGRESS_STORAGE_KEY)) || {};
+    // Return stored data or defaults if none exists for this phoneme
+    return allProgress[phonemeId] || { accuracy: 0, practiceCount: 0 };
+  } catch (error) {
+    console.error("Failed to parse phoneme progress from localStorage", error);
+    return { accuracy: 0, practiceCount: 0 };
+  }
+};
 
-  const steps = [
-    {
-      title: 'Visual Guide',
-      content: 'Learn the correct mouth and tongue position',
-      component: 'VisualGuide'
-    },
-    {
-      title: 'Test Your Skills',
-      content: 'Record and get feedback',
-      component: 'TestSkills'
-    }
-  ];
+/**
+ * Saves progress for a specific phoneme to localStorage.
+ * @param {string} phonemeId - The ID of the phoneme (e.g., 'h').
+ * @param {{ accuracy: number, practiceCount: number }} progress - The data to save.
+ */
+const saveStoredProgress = (phonemeId, progress) => {
+  try {
+    const allProgress = JSON.parse(localStorage.getItem(PROGRESS_STORAGE_KEY)) || {};
+    allProgress[phonemeId] = progress;
+    localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(allProgress));
+  } catch (error) {
+    console.error("Failed to save phoneme progress to localStorage", error);
+  }
+};
 
-  useEffect(() => {
-    // Check if phoneme is already learned
-    if (phonemeId && state.progress?.phonemesLearned?.includes(phonemeId)) {
-      setIsCompleted(true);
-    }
-    
-    // Cleanup function to clear timers on unmount
-    return () => {
-      if (recordingTimerRef.current) {
-        clearTimeout(recordingTimerRef.current);
-      }
-      if (durationTimerRef.current) {
-        clearInterval(durationTimerRef.current);
-      }
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-      stopRealTimeRecording();
-    };
-  }, [phonemeId, state.progress]);
-
-
-  const startRecording = async () => {
+/**
+ * Clears the progress for a specific phoneme from localStorage.
+ * @param {string} phonemeId - The ID of the phoneme to clear.
+ */
+const clearStoredProgress = (phonemeId) => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream);
-      recordedChunksRef.current = [];
-      
-      // Set recording duration to 2 seconds for phoneme recording
-      const duration = 2000;
-      setRecordingDuration(0);
-      
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          recordedChunksRef.current.push(event.data);
-        }
-      };
-      
-      mediaRecorderRef.current.onstop = () => {
-        const audioBlob = new Blob(recordedChunksRef.current, { type: 'audio/webm' });
-        classifyPhoneme(audioBlob);
-      };
-      
-      mediaRecorderRef.current.start();
-      setIsRecording(true);
-      
-      // Start real-time recording for meters
-      await startRealTimeRecording();
-      
-      // Update duration for UI display
-      durationTimerRef.current = setInterval(() => {
-        setRecordingDuration(prev => prev + 100);
-      }, 100);
-      
-      // Auto-stop after 2 seconds
-      recordingTimerRef.current = setTimeout(() => {
-        stopRecording();
-      }, duration);
-      
+        const allProgress = JSON.parse(localStorage.getItem(PROGRESS_STORAGE_KEY)) || {};
+        delete allProgress[phonemeId]; // Remove the key for the specific phoneme
+        localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(allProgress));
     } catch (error) {
-      console.error('Error accessing microphone:', error);
-      alert('Error accessing microphone. Please check your permissions.');
+        console.error("Failed to clear phoneme progress from localStorage", error);
     }
-  };
+};
 
-  const stopRecording = () => {
-    // CORRECTED: Instead of checking the potentially stale `isRecording` state,
-    // we check the actual state of the MediaRecorder instance. This is the
-    // source of truth and avoids the stale closure problem.
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      setIsProcessing(true);
-      
-      // Stop real-time recording
-      stopRealTimeRecording();
-      
-      // Clear timers
-      if (recordingTimerRef.current) {
-        clearTimeout(recordingTimerRef.current);
-        recordingTimerRef.current = null;
-      }
-      if (durationTimerRef.current) {
-        clearInterval(durationTimerRef.current);
-        durationTimerRef.current = null;
-      }
-      
-      // Stop all tracks to release microphone
-      if (mediaRecorderRef.current.stream) {
-        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
-      }
-    }
-  };
-
-  const classifyPhoneme = async (audioBlob) => {
-    try {
-      const formData = new FormData();
-      formData.append('audio', audioBlob, 'recording.webm');
-
-      const response = await axios.post('http://localhost:5000/api/classify-phoneme', formData);
-
-      console.log('response', response);
-      const result = await response.data;
-      setIsProcessing(false);
-
-      if (result.success) {
-        const predictedPhoneme = result.phoneme;
-        const confidence = result.confidence_percentage;
-        
-        // Calculate accuracy based on whether the predicted phoneme matches the target
-        const isCorrect = predictedPhoneme.toLowerCase() === phonemeId.toLowerCase();
-        const calculatedAccuracy = isCorrect ? Math.max(confidence, 80) : Math.min(confidence, 60);
-        
-        setAccuracy(calculatedAccuracy);
-        setLastPrediction({
-          predicted: predictedPhoneme,
-          target: phonemeId,
-          confidence: confidence,
-          isCorrect: isCorrect
-        });
-        setShowFeedback(true);
-        setPracticeCount(prev => prev + 1);
-        
-        // Check if practice is complete
-        if (practiceCount >= 4) {
-          actions.completePhoneme(phonemeId);
-          setIsCompleted(true);
-        }
-      } else {
-        console.error('Classification failed:', result.error);
-        alert('Classification failed: ' + result.error);
-        setIsProcessing(false);
-      }
-    } catch (error) {
-      console.error('Error classifying phoneme:', error);
-      alert('Error processing audio. Please try again.');
-      setIsProcessing(false);
-    }
-  };
-
-  const playPhoneme = () => {
-    setIsPlaying(true);
-    // Simulate audio playback
-    setTimeout(() => {
-      setIsPlaying(false);
-    }, 1000);
-  };
-
-  // Real-time audio analysis functions
-  const initRealTimeAudio = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
-      const source = audioContextRef.current.createMediaStreamSource(stream);
-      
-      analyserRef.current = audioContextRef.current.createAnalyser();
-      analyserRef.current.fftSize = 2048;
-      analyserRef.current.smoothingTimeConstant = 0.8;
-      source.connect(analyserRef.current);
-      
-      return true;
-    } catch (error) {
-      console.error('Error initializing real-time audio:', error);
-      return false;
-    }
-  };
-
-  const analyzeRealTimeAudio = () => {
-    if (!analyserRef.current || !isRealTimeRecording) return;
-
-    const dataArray = new Float32Array(analyserRef.current.frequencyBinCount);
-    analyserRef.current.getFloatFrequencyData(dataArray);
-
-    // Convert dB to linear magnitudes
-    const magnitudes = Array.from(dataArray, v => Math.pow(10, v / 20));
-    const sampleRate = audioContextRef.current.sampleRate;
-    const binWidth = sampleRate / 2 / analyserRef.current.frequencyBinCount;
-
-    // H-meter analysis (high-frequency energy and spectral flatness)
-    let totalEnergy = 0;
-    let lowFreqEnergy = 0;
-    let highFreqEnergy = 0;
-    const lowFreqLimit = 350;
-    const highFreqStart = 1000;
-
-    for (let i = 0; i < magnitudes.length; i++) {
-      const freq = i * binWidth;
-      const energy = magnitudes[i];
-      totalEnergy += energy;
-      if (freq < lowFreqLimit) lowFreqEnergy += energy;
-      else if (freq > highFreqStart) highFreqEnergy += energy;
-    }
-
-    const lowRatio = totalEnergy > 0 ? lowFreqEnergy / totalEnergy : 0;
-    const highRatio = totalEnergy > 0 ? highFreqEnergy / totalEnergy : 0;
-
-    // Calculate spectral flatness
-    let logSum = 0;
-    for (let i = 0; i < magnitudes.length; i++) {
-      const val = Math.max(magnitudes[i], 1e-12);
-      logSum += Math.log(val);
-    }
-    const geoMean = Math.exp(logSum / magnitudes.length);
-    const meanEnergy = totalEnergy / magnitudes.length;
-    const spectralFlatness = geoMean / (meanEnergy + 1e-12);
-
-    // H-meter value (0-100)
-    const hValue = totalEnergy > 1e-2 && lowRatio < 0.15 && highRatio > 0.35 && spectralFlatness > 0.2 
-      ? Math.min(100, (highRatio * 200 + spectralFlatness * 100)) 
-      : 0;
-
-    // M-meter analysis (pitch detection for tonal sounds)
-    const byteDataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
-    analyserRef.current.getByteFrequencyData(byteDataArray);
-    
-    // Simple pitch detection - find peak frequency
-    let maxValue = 0;
-    let maxIndex = 0;
-    for (let i = 0; i < byteDataArray.length; i++) {
-      if (byteDataArray[i] > maxValue) {
-        maxValue = byteDataArray[i];
-        maxIndex = i;
-      }
-    }
-    
-    const peakFreq = maxIndex * binWidth;
-    const rms = Math.sqrt(byteDataArray.reduce((sum, val) => sum + val * val, 0) / byteDataArray.length);
-    
-    // M-meter value (0-100) - good for humming/tonal sounds
-    const mValue = rms > 5 && peakFreq >= 70 && peakFreq <= 500 
-      ? Math.min(100, (rms / 10) * 50 + (peakFreq > 100 && peakFreq < 400 ? 50 : 0))
-      : 0;
-
-    // S-meter analysis (hissing sounds in 4-8kHz range)
-    const hissStartFreq = 4000;
-    const hissEndFreq = 8000;
-    const lowFreqEnd = 2000;
-    
-    let hissEnergy = 0;
-    let lowEnergy = 0;
-
-    for (let i = 0; i < byteDataArray.length; i++) {
-      const freq = i * binWidth;
-      const amplitude = byteDataArray[i] / 255.0;
-
-      if (freq >= hissStartFreq && freq <= hissEndFreq) {
-        hissEnergy += amplitude;
-      } else if (freq < lowFreqEnd) {
-        lowEnergy += amplitude;
-      }
-    }
-    
-    // S-meter value (0-100)
-    const sValue = hissEnergy < 1.0 ? 0 : Math.min(100, (hissEnergy / (lowEnergy + 1)) * 20);
-
-    setHMeterValue(hValue);
-    setMMeterValue(mValue);
-    setSMeterValue(sValue);
-
-    if (isRealTimeRecording) {
-      animationFrameRef.current = requestAnimationFrame(analyzeRealTimeAudio);
-    }
-  };
-
-  const startRealTimeRecording = async () => {
-    const success = await initRealTimeAudio();
-    if (success) {
-      setIsRealTimeRecording(true);
-      analyzeRealTimeAudio();
-    }
-  };
-
-  const stopRealTimeRecording = () => {
-    setIsRealTimeRecording(false);
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-    }
-    setHMeterValue(0);
-    setMMeterValue(0);
-    setSMeterValue(0);
-  };
-
-  const nextStep = () => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  const prevStep = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
-  const resetPractice = () => {
-    setPracticeCount(0);
-    setAccuracy(0);
-    setShowFeedback(false);
-    setIsCompleted(false);
-    setLastPrediction(null);
-    setIsProcessing(false);
-    setRecordingDuration(0);
-    
-    // Clear any active timers
-    if (recordingTimerRef.current) {
-      clearTimeout(recordingTimerRef.current);
-      recordingTimerRef.current = null;
-    }
-    if (durationTimerRef.current) {
-      clearInterval(durationTimerRef.current);
-      durationTimerRef.current = null;
-    }
-  };
-
-
-  const VisualGuide = () => (
-    <div className="visual-guide">
-      <div className="mouth-animation">
+// Place this BEFORE your main PhonemeLearning component
+const PerformanceFeedback = React.memo(function PerformanceFeedback({ showFeedback, lastPrediction, accuracy, isProcessing }) {
+  return (
+    <AnimatePresence>
+      {showFeedback && lastPrediction && (
         <motion.div
-          className="mouth-visual"
-          animate={{
-            scale: [1, 1.1, 1],
-            rotate: [0, 5, -5, 0]
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
+          className="performance-feedback"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
         >
-          {phoneme.visualGuide}
+          <h4>Your Performance</h4>
+          
+          <div className="performance-metrics-horizontal">
+            {/* Metric Card: Target */}
+            <div className="metric-card">
+              <div className="metric-icon">🎯</div>
+              <div className="metric-content">
+                <h5>Target Phoneme</h5>
+                <div className="metric-value target">{lastPrediction.target}</div>
+              </div>
+            </div>
+            
+            {/* Metric Card: You Said */}
+            <div className="metric-card">
+              <div className="metric-icon">🎤</div>
+              <div className="metric-content">
+                <h5>You Said</h5>
+                <div className={`metric-value ${lastPrediction.isCorrect ? 'correct' : 'incorrect'}`}>
+                  {isProcessing ? "--" : lastPrediction.predicted}
+                </div>
+              </div>
+            </div>
+            
+            {/* Metric Card: Confidence */}
+            <div className="metric-card">
+              <div className="metric-icon">📊</div>
+              <div className="metric-content">
+                <h5>Confidence</h5>
+                <div className="metric-value confidence">{isProcessing ? "--" : `${Math.round(lastPrediction.confidence)}%`}</div>
+              </div>
+            </div>
+            
+            {/* Metric Card: Accuracy */}
+            <div className="metric-card">
+              <div className="metric-icon">⭐</div>
+              <div className="metric-content">
+                <h5>Accuracy</h5>
+                <div className="metric-value accuracy">{isProcessing ? "--" : `${Math.round(accuracy)}%`}</div>
+              </div>
+            </div>
+          </div>
+          
+          {lastPrediction.isCorrect ? (
+            <div className="success-message">
+              <CheckCircle size={24} />
+              <span>Excellent! You got it right!</span>
+            </div>
+          ) : (
+            <div className="improvement-message">
+              <span>Good try! The target was '{lastPrediction.target}', you said '{lastPrediction.predicted}'. Keep practicing!</span>
+            </div>
+          )}
         </motion.div>
+      )}
+    </AnimatePresence>
+  );
+});
+
+const VisualGuide = React.memo(function VisualGuide({ phoneme }) {
+  return (
+    <div className="visual-guide">
+      <div className="guide-main-content">
+        <div className="guide-advice-container">
+          <div className="guide-advice">
+            <h4>💡Let's speak 🗣️</h4>
+            <p>{phoneme.visualGuide}</p>
+          </div>
+        </div>
+        <div className="position-guides-container">
+          <div className="guide-item">
+            <h4>👅 Tongue Position</h4>
+            <img src={phoneme.tongueImage} alt="Tongue Position" />
+            <p>{phoneme.tonguePosition}</p>
+          </div>
+          <div className="guide-item">
+            <h4>👄 Lip Position</h4>
+            <img src={phoneme.lipImage} alt="Lip Position" />
+            <p>{phoneme.lipPosition}</p>
+          </div>
+        </div>
       </div>
       
       <div className="phoneme-info">
         <h3>Phoneme: {phoneme.symbol}</h3>
         <p className="description">{phoneme.description}</p>
-        
-        <div className="position-guides">
-          <div className="guide-item">
-            <h4>👅 Tongue Position</h4>
-            <p>{phoneme.tonguePosition}</p>
-          </div>
-          <div className="guide-item">
-            <h4>👄 Lip Position</h4>
-            <p>{phoneme.lipPosition}</p>
-          </div>
-        </div>
         
         <div className="example-words">
           <h4>Example Words:</h4>
@@ -441,76 +185,115 @@ const PhonemeLearning = () => {
       </div>
     </div>
   );
+});
 
-
-  const TestSkills = () => (
+const TestSkills = React.memo(function TestSkills({
+  phonemeId,
+  isRecording,
+  isProcessing,
+  isMeterActive,
+  hMeterValue,
+  mMeterValue,
+  sMeterValue,
+  practiceCount,
+  difficulty,
+  phoneme,
+  showFeedback,
+  lastPrediction,
+  accuracy,
+  startRecording,
+  stopRecording,
+  toggleMeterAnalysis,
+  targets
+}) {
+  return (
     <div className="test-skills">
       <h3>Test Your Skills</h3>
       <p>Record yourself saying the phoneme and get feedback</p>
       
       <div className="recording-section">
         <div className="record-phoneme-card">
-          <motion.button
-            className={`record-button large ${isRecording ? 'recording' : ''} ${isProcessing ? 'processing' : ''}`}
-            onClick={isRecording ? stopRecording : startRecording}
-            disabled={isProcessing}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            {isProcessing ? (
-              <div className="spinner" />
-            ) : isRecording ? (
-              <MicOff size={32} />
-            ) : (
-              <Mic size={32} />
-            )}
-            {isProcessing ? 'Processing...' : isRecording ? `Recording... ${(2000 - recordingDuration) / 1000}s` : 'Record Phoneme'}
-          </motion.button>
           
           {/* Real-time Feedback Meters */}
           <div className="real-time-meters" data-phoneme={phonemeId}>
+              <motion.button
+                className={`record-button large ${isRecording ? 'recording' : ''} ${isProcessing ? 'processing' : ''}`}
+                onMouseDown={startRecording}
+                onMouseUp={stopRecording}
+                onMouseLeave={() => { if(isRecording) stopRecording() }} // Stop if mouse leaves while recording
+                disabled={isProcessing}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                {isProcessing ? (
+                  <div className="spinner" />
+                ) : isRecording ? (
+                  <MicOff size={32} />
+                ) : (
+                  <Mic size={32} />
+                )}
+                {isProcessing ? 'Processing...' : isRecording ? `Recording...` : 'Hold to Record'}
+              </motion.button>
             <div className="meter-container">
-              <div className="meter-label">H-Meter</div>
+              <div className="meter-label">Airflow</div>
               <div className="meter-bar">
                 <div 
                   className="meter-fill h-meter"
-                  style={{ height: `${hMeterValue}%` }}
+                  style={{ height: `${hMeterValue}%`, transition: 'height 0.1s ease-out' }}
                 ></div>
-                <div className="meter-target h-target"></div>
+                <div className="meter-target h-target" style={{ bottom: `${targets.h[0]}%`, height: `${targets.h[1] - targets.h[0]}%` }}></div>
               </div>
               <div className="meter-value">{Math.round(hMeterValue)}%</div>
             </div>
             
             <div className="meter-container">
-              <div className="meter-label">M-Meter</div>
+              <div className="meter-label">Voicing</div>
               <div className="meter-bar">
                 <div 
                   className="meter-fill m-meter"
-                  style={{ height: `${mMeterValue}%` }}
+                  style={{ height: `${mMeterValue}%`, transition: 'height 0.1s ease-out' }}
                 ></div>
-                <div className="meter-target m-target"></div>
+                <div className="meter-target m-target" style={{ bottom: `${targets.m[0]}%`, height: `${targets.m[1] - targets.m[0]}%` }}></div>
               </div>
               <div className="meter-value">{Math.round(mMeterValue)}%</div>
             </div>
             
             <div className="meter-container">
-              <div className="meter-label">S-Meter</div>
+              <div className="meter-label">Sibilance</div>
               <div className="meter-bar">
                 <div 
                   className="meter-fill s-meter"
-                  style={{ height: `${sMeterValue}%` }}
+                  style={{ height: `${sMeterValue}%`, transition: 'height 0.1s ease-out' }}
                 ></div>
-                <div className="meter-target s-target"></div>
+                <div className="meter-target s-target" style={{ bottom: `${targets.s[0]}%`, height: `${targets.s[1] - targets.s[0]}%` }}></div>
               </div>
               <div className="meter-value">{Math.round(sMeterValue)}%</div>
             </div>
+            {/* **NEW METER TOGGLE BUTTON** */}
+              <motion.button
+                className={`btn-icon meter-toggle ${isMeterActive ? 'active' : ''}`}
+                onClick={toggleMeterAnalysis}
+                disabled={isRecording || isProcessing}
+                title={isMeterActive ? "Turn off live meters" : "Turn on live meters"}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <BarChart3 size={24} />
+              </motion.button>
           </div>
           
           <div className="practice-stats">
-            <div className="stat">
-              <span className="stat-label">Practice Count:</span>
-              <span className="stat-value">{practiceCount}/5</span>
-            </div>
+            {practiceCount >= 5 ? (
+              <div className="mastered-badge">
+                <CheckCircle size={24} className="mastered-icon" />
+                <span className="mastered-text">Mastered</span>
+              </div>
+            ) : (
+              <div className="stat">
+                <span className="stat-label">Practice Count:</span>
+                <span className="stat-value">{practiceCount}/5</span>
+              </div>
+            )}
             <div className="stat">
               <span className="stat-label">Difficulty:</span>
               <span 
@@ -522,86 +305,412 @@ const PhonemeLearning = () => {
             </div>
           </div>
           
-          <AnimatePresence>
-            {showFeedback && lastPrediction && (
-              <motion.div
-                className="performance-feedback"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-              >
-                <h4>Your Performance</h4>
-                
-                <div className="performance-metrics-horizontal">
-                  <div className="metric-card">
-                    <div className="metric-icon">
-                      🎯
-                    </div>
-                    <div className="metric-content">
-                      <h5>Target Phoneme</h5>
-                      <div className="metric-value target">{lastPrediction.target}</div>
-                    </div>
-                  </div>
-                  
-                  <div className="metric-card">
-                    <div className="metric-icon">
-                      🎤
-                    </div>
-                    <div className="metric-content">
-                      <h5>You Said</h5>
-                      <div className={`metric-value ${lastPrediction.isCorrect ? 'correct' : 'incorrect'}`}>
-                        {lastPrediction.predicted}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="metric-card">
-                    <div className="metric-icon">
-                      📊
-                    </div>
-                    <div className="metric-content">
-                      <h5>Confidence</h5>
-                      <div className="metric-value confidence">{Math.round(lastPrediction.confidence)}%</div>
-                    </div>
-                  </div>
-                  
-                  <div className="metric-card">
-                    <div className="metric-icon">
-                      ⭐
-                    </div>
-                    <div className="metric-content">
-                      <h5>Accuracy</h5>
-                      <div className="metric-value accuracy">{Math.round(accuracy)}%</div>
-                    </div>
-                  </div>
-                </div>
-                
-                {lastPrediction.isCorrect ? (
-                  <div className="success-message">
-                    <CheckCircle size={24} />
-                    <span>Excellent! You got it right!</span>
-                  </div>
-                ) : (
-                  <div className="improvement-message">
-                    <span>Good try! The target was '{lastPrediction.target}', you said '{lastPrediction.predicted}'. Keep practicing!</span>
-                  </div>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
+           {/* **REPLACEMENT**: Use the memoized component */}
+          <PerformanceFeedback
+            showFeedback={showFeedback && !isRecording} // also hide during recording
+            lastPrediction={lastPrediction}
+            accuracy={accuracy}
+            isProcessing={isProcessing}
+          />
         </div>
       </div>
     </div>
   );
+});
 
-  const renderStepContent = () => {
+const PhonemeLearning = () => {
+  const { phonemeId } = useParams();
+  const { state, actions } = useApp();
+  const navigate = useNavigate();
+  const [isRecording, setIsRecording] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [practiceCount, setPracticeCount] = useState(0);
+  const [accuracy, setAccuracy] = useState(0);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [lastPrediction, setLastPrediction] = useState(null);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [isMeterActive, setIsMeterActive] = useState(false);
+  
+  // Real-time feedback meters state
+  const [hMeterValue, setHMeterValue] = useState(0);
+  const [mMeterValue, setMMeterValue] = useState(0);
+  const [sMeterValue, setSMeterValue] = useState(0);
+  
+  const mediaRecorderRef = useRef(null);
+  const audioRef = useRef(null);
+  const recordedChunksRef = useRef([]);
+  const durationTimerRef = useRef(null);
+  
+  // Real-time audio analysis refs
+  const audioContextRef = useRef(null);
+  const analyserRef = useRef(null);
+  const animationFrameRef = useRef(null);
+  const audioStreamRef = useRef(null); // Ref to hold the single, stable audio stream
+
+  const availablePhonemes = ['h', 'l', 'p', 'eh'];
+  
+  const phoneme = phonemeId ? PHONEME_DATA[phonemeId] : null;
+  const difficulty = phoneme ? DIFFICULTY_LEVELS[phoneme.difficulty] : null;
+
+  const phonemeTargets = {
+    h: { h: [80, 100], m: [0, 10], s: [20, 30] },
+    eh: { h: [0, 10], m: [50, 60], s: [10, 20] },
+    eh: { h: [0, 10], m: [50, 60], s: [0, 10] },
+    p: { h: [0, 10], m: [0, 10], s: [10, 20] },
+    // Add other phonemes here if needed
+  };
+
+  const currentTargets = phonemeTargets[phonemeId] || { h: [0,0], m: [0,0], s: [0,0] };
+
+  const steps = [
+    {
+      title: 'Visual Guide',
+      content: 'Learn the correct mouth and tongue position',
+      component: 'VisualGuide'
+    },
+    {
+      title: 'Test Your Skills',
+      content: 'Record and get feedback',
+      component: 'TestSkills'
+    }
+  ];
+
+ // **NEW EFFECT**: Load progress from localStorage when the component mounts or phonemeId changes.
+  useEffect(() => {
+    if (phonemeId) {
+      const { accuracy: storedAccuracy, practiceCount: storedPracticeCount } = getStoredProgress(phonemeId);
+      setAccuracy(storedAccuracy);
+      setPracticeCount(storedPracticeCount);
+
+      // **FIX**: Reset the session-specific feedback state when changing phonemes.
+      setShowFeedback(false);
+      setLastPrediction(null);
+      setIsProcessing(false);
+    }
+  }, [phonemeId]); // This runs whenever the user navigates to a new phoneme page.
+
+  // **NEW EFFECT**: Save progress to localStorage whenever accuracy or practiceCount changes.
+  useEffect(() => {
+    // Only save if phonemeId is valid and it's not the initial state
+    if (phonemeId) {
+      saveStoredProgress(phonemeId, { accuracy, practiceCount });
+    }
+  }, [accuracy, practiceCount, phonemeId]);
+
+  // **MAJOR CHANGE**: Centralized audio setup and cleanup with useEffect
+  useEffect(() => {
+    // Function to initialize the audio stream and analyser
+    const setupAudio = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioStreamRef.current = stream; // Store the stream
+        
+        audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+        const source = audioContextRef.current.createMediaStreamSource(stream);
+        
+        analyserRef.current = audioContextRef.current.createAnalyser();
+        analyserRef.current.fftSize = 2048;
+        analyserRef.current.smoothingTimeConstant = 0.8;
+        source.connect(analyserRef.current);
+      } catch (error) {
+        console.error('Error accessing microphone:', error);
+        alert('Could not access microphone. Please check your permissions.');
+      }
+    };
+
+    setupAudio();
+
+    // Cleanup function: runs when the component unmounts
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (audioStreamRef.current) {
+        audioStreamRef.current.getTracks().forEach(track => track.stop()); // Stop mic access
+      }
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close();
+      }
+    };
+  }, []); // Empty dependency array ensures this runs only once on mount and cleanup on unmount
+
+  // **CORRECTED**: This function now perfectly mirrors the logic from script.js
+  const analyzeRealTimeAudio = useCallback(() => {
+    if (!analyserRef.current) return;
+
+    // --- H-Meter Logic (from script.js) ---
+    const floatArray = new Float32Array(analyserRef.current.frequencyBinCount);
+    analyserRef.current.getFloatFrequencyData(floatArray);
+
+    const magnitudes = Array.from(floatArray, v => Math.pow(10, v / 20));
+
+    let totalEnergy = 0;
+    let lowFreqEnergy = 0;
+    let highFreqEnergy = 0;
+
+    const sampleRate = audioContextRef.current.sampleRate;
+    const binWidth = sampleRate / 2 / analyserRef.current.frequencyBinCount;
+    const lowFreqLimit = 350;
+    const highFreqStart = 1000;
+
+    for (let i = 0; i < magnitudes.length; i++) {
+        const freq = i * binWidth;
+        const energy = magnitudes[i];
+        totalEnergy += energy;
+        if (freq < lowFreqLimit) lowFreqEnergy += energy;
+        else if (freq > highFreqStart) highFreqEnergy += energy;
+    }
+
+    const lowRatio = totalEnergy > 0 ? lowFreqEnergy / totalEnergy : 0;
+    const highRatio = totalEnergy > 0 ? highFreqEnergy / totalEnergy : 0;
+
+    let logSum = 0;
+    for (let i = 0; i < magnitudes.length; i++) {
+        const val = Math.max(magnitudes[i], 1e-12);
+        logSum += Math.log(val);
+    }
+    const geoMean = Math.exp(logSum / magnitudes.length);
+    const meanEnergy = totalEnergy / magnitudes.length;
+    const spectralFlatness = geoMean / (meanEnergy + 1e-12);
+    
+    // Condition to detect /h/ sound
+    const isHDetected = totalEnergy > 1e-2 && lowRatio < 0.15 && highRatio > 0.35 && spectralFlatness > 0.2;
+    // Calculate a meter value based on the detection strength
+    const hValue = isHDetected ? Math.min(100, (highRatio * 200 + spectralFlatness * 100)) : 0;
+    setHMeterValue(hValue);
+
+
+    // --- M-Meter and S-Meter Logic (can be refined similarly if needed) ---
+    const byteDataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+    analyserRef.current.getByteFrequencyData(byteDataArray);
+    
+    // M-meter value (tonal sounds)
+    let maxValue = 0;
+    let maxIndex = 0;
+    for (let i = 0; i < byteDataArray.length; i++) {
+        if (byteDataArray[i] > maxValue) {
+            maxValue = byteDataArray[i];
+            maxIndex = i;
+        }
+    }
+    const peakFreq = maxIndex * binWidth;
+    const rms = Math.sqrt(byteDataArray.reduce((sum, val) => sum + val * val, 0) / byteDataArray.length);
+    let mValue = 0;
+    mValue = 0.8 * mValue + 0.95 * ((rms > 8 && peakFreq > 80 && peakFreq < 400) ? Math.round(100 * Math.exp(-0.5 * ((peakFreq - 200) / 100) ** 2) * Math.min(1, (rms - 8) / 15)) : 0);
+    setMMeterValue(mValue);
+
+    // S-meter value (hissing sounds)
+    const hissStartFreq = 4000;
+    const hissEndFreq = 8000;
+    const lowFreqEnd = 2000;
+    let hissEnergy = 0;
+    let lowEnergy = 0;
+    for (let i = 0; i < byteDataArray.length; i++) {
+        const freq = i * binWidth;
+        const amplitude = byteDataArray[i] / 255.0;
+        if (freq >= hissStartFreq && freq <= hissEndFreq) hissEnergy += amplitude;
+        else if (freq < lowFreqEnd) lowEnergy += amplitude;
+    }
+    const sValue = hissEnergy < 1.0 ? 0 : Math.min(100, (hissEnergy / (lowEnergy + 1)) * 20);
+    setSMeterValue(sValue);
+  }, []); // State setters from useState are stable and don't need to be dependencies
+
+  // **REFACTORED**: Simplified analysis loop stopper
+  const stopAnalysisLoop = useCallback(() => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    // Reset meters when not recording
+    setHMeterValue(0);
+    setMMeterValue(0);
+    setSMeterValue(0);
+  }, []); // No dependencies needed
+
+  // **REFACTORED**: Simplified analysis loop starter
+const startAnalysisLoop = useCallback(() => {
+    if (!analyserRef.current) return;
+
+    // **FIX**: Always cancel any previous frame to prevent multiple loops.
+    if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+    }
+
+    const analyze = () => {
+      analyzeRealTimeAudio();
+      animationFrameRef.current = requestAnimationFrame(analyze);
+    };
+    analyze();
+  }, [analyzeRealTimeAudio]);
+
+  const classifyPhoneme = useCallback(async (audioBlob) => {
+    try {
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'recording.webm');
+      const response = await axios.post('http://localhost:5000/api/classify-phoneme', formData);
+      const result = response.data;
+      
+      setIsProcessing(false);
+      if (result.success) {
+        const { phoneme: predictedPhoneme, confidence_percentage: confidence } = result;
+        const isCorrect = predictedPhoneme.toLowerCase() === phonemeId.toLowerCase();
+        const newAccuracy = (accuracy * practiceCount + (isCorrect ? 100 : 0)) / (practiceCount + 1);
+        
+        // State will be updated here, which triggers the "save" useEffect
+        setAccuracy(newAccuracy);
+        setPracticeCount(prev => prev + 1);
+
+        setLastPrediction({ predicted: predictedPhoneme, target: phonemeId, confidence, isCorrect });
+        setShowFeedback(true);
+        
+        // Check practiceCount + 1 because the state update is asynchronous
+        if (practiceCount + 1 >= 5) {
+          actions.completePhoneme(phonemeId);
+          setIsCompleted(true);
+        }
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      console.error('Error classifying phoneme:', error);
+      alert('Error processing audio. Please try again.');
+      setIsProcessing(false);
+    }
+  }, [phonemeId, accuracy, practiceCount, actions]); // Dependencies for calculation and state updates
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+    }
+    
+    setIsRecording(false);
+    setIsProcessing(true);
+    // **MODIFICATION**: Only stop the analysis loop if the meters are not meant to be active.
+    if (!isMeterActive) {
+      stopAnalysisLoop();
+    }
+    
+    if (durationTimerRef.current) {
+      clearInterval(durationTimerRef.current);
+      durationTimerRef.current = null;
+    }
+  }, [isMeterActive, stopAnalysisLoop]); // Add dependency
+
+  const startRecording = useCallback(async () => {
+    if (!audioStreamRef.current) {
+      alert('Microphone not ready. Please grant permission and try again.');
+      return;
+    }
+    
+    // Start the visual meter analysis
+    startAnalysisLoop();
+
+    mediaRecorderRef.current = new MediaRecorder(audioStreamRef.current);
+    recordedChunksRef.current = [];
+    const duration = 2000;
+    setRecordingDuration(0);
+
+    mediaRecorderRef.current.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        recordedChunksRef.current.push(event.data);
+      }
+    };
+    
+    mediaRecorderRef.current.onstop = () => {
+      const audioBlob = new Blob(recordedChunksRef.current, { type: 'audio/webm' });
+      classifyPhoneme(audioBlob);
+    };
+    
+    mediaRecorderRef.current.start();
+    setIsRecording(true);
+    
+    durationTimerRef.current = setInterval(() => {
+      setRecordingDuration(prev => prev + 100);
+    }, 100);
+    
+    setTimeout(() => {
+        // Ensure we only stop if it's still recording
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+            stopRecording();
+        }
+    }, duration);
+  }, [startAnalysisLoop, stopRecording, classifyPhoneme]); // FULL dependency list
+
+  const toggleMeterAnalysis = useCallback(() => {
+    if (isRecording || isProcessing) return;
+    
+    setIsMeterActive(prevIsActive => {
+      const newIsActive = !prevIsActive;
+      if (newIsActive) {
+        startAnalysisLoop();
+      } else {
+        stopAnalysisLoop();
+      }
+      return newIsActive;
+    });
+  }, [isRecording, isProcessing, startAnalysisLoop, stopAnalysisLoop]); // Add dependencies
+
+  const playPhoneme = () => {
+    setIsPlaying(true);
+    setTimeout(() => setIsPlaying(false), 1000);
+  };
+
+  const nextStep = () => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const resetPractice = () => {
+    if (phonemeId) {
+        clearStoredProgress(phonemeId);
+    }
+    // These state updates will trigger the "save" useEffect, saving the cleared state.
+    setPracticeCount(0);
+    setAccuracy(0);
+    setShowFeedback(false);
+    setIsCompleted(false);
+    setLastPrediction(null);
+    setIsProcessing(false);
+    setRecordingDuration(0);
+  };
+
+const renderStepContent = () => {
     switch (steps[currentStep].component) {
       case 'VisualGuide':
-        return <VisualGuide />;
+        return <VisualGuide phoneme={phoneme} />;
       case 'TestSkills':
-        return <TestSkills />;
+        return (
+          <TestSkills
+            phonemeId={phonemeId}
+            isRecording={isRecording}
+            isProcessing={isProcessing}
+            isMeterActive={isMeterActive}
+            hMeterValue={hMeterValue}
+            mMeterValue={mMeterValue}
+            sMeterValue={sMeterValue}
+            practiceCount={practiceCount}
+            difficulty={difficulty}
+            phoneme={phoneme}
+            showFeedback={showFeedback}
+            lastPrediction={lastPrediction}
+            accuracy={accuracy}
+            startRecording={startRecording}
+            stopRecording={stopRecording}
+            toggleMeterAnalysis={toggleMeterAnalysis}
+            targets={currentTargets}
+          />
+        );
       default:
-        return <VisualGuide />;
+        return <VisualGuide phoneme={phoneme} />;
     }
   };
 
@@ -736,13 +845,34 @@ const PhonemeLearning = () => {
         {/* Step Content */}
         <motion.div
           key={currentStep}
-          className="step-content"
+          className="step-content w-full"
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -20 }}
           transition={{ duration: 0.3 }}
         >
-          {renderStepContent()}
+          {currentStep === 0 && <VisualGuide phoneme={phoneme} />}
+          {currentStep === 1 && 
+            <TestSkills 
+              phonemeId={phonemeId}
+              isRecording={isRecording}
+              isProcessing={isProcessing}
+              isMeterActive={isMeterActive}
+              hMeterValue={hMeterValue}
+              mMeterValue={mMeterValue}
+              sMeterValue={sMeterValue}
+              practiceCount={practiceCount}
+              difficulty={difficulty}
+              phoneme={phoneme}
+              showFeedback={showFeedback}
+              lastPrediction={lastPrediction}
+              accuracy={accuracy}
+              startRecording={startRecording}
+              stopRecording={stopRecording}
+              toggleMeterAnalysis={toggleMeterAnalysis}
+              targets={currentTargets}
+            />
+          }
         </motion.div>
 
         {/* Navigation */}

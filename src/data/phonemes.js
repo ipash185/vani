@@ -64,6 +64,14 @@ export const CORE_WORDS = [
     priority: 8,
     examples: ["please help", "please stop", "please more"],
   },
+  {
+    id: 'want',
+    word: 'want',
+    phonemes: ['w', 'aa', 'n', 't'],
+    meaning: 'To have a desire for something',
+    priority: 9,
+    examples: ['I want that', 'I want more', 'do you want?']
+  }
 ];
 
 // Phoneme data with visual guides and examples
@@ -77,6 +85,8 @@ export const PHONEME_DATA = {
     visualGuide: "👄 Slightly open mouth, breath out gently",
     difficulty: "easy",
     practiceWords: ["hat", "help", "house", "happy"],
+    tongueImage: "https://i.postimg.cc/Tw9Z6npG/h-sound.png",
+    lipImage: "https://i.postimg.cc/pV8rQ4Nn/Gemini-Generated-Image-b362aub362aub362-1.png"
   },
   e: {
     symbol: "/e/",
@@ -87,6 +97,8 @@ export const PHONEME_DATA = {
     visualGuide: "😊 Smile slightly, tongue forward",
     difficulty: "medium",
     practiceWords: ["bed", "red", "pen", "yes"],
+    tongueImage: "https://via.placeholder.com/200x150.png?text=Tongue+Position",
+    lipImage: "https://via.placeholder.com/200x150.png?text=Lip+Position"
   },
   l: {
     symbol: "/l/",
@@ -97,6 +109,8 @@ export const PHONEME_DATA = {
     visualGuide: "👅 Tongue tip up to roof of mouth",
     difficulty: "medium",
     practiceWords: ["love", "like", "help", "ball"],
+    tongueImage: "https://i.postimg.cc/v8PZ7V3s/l-sound.png",
+    lipImage: "https://i.postimg.cc/HL8GbGJz/Gemini-Generated-Image-q6scnkq6scnkq6sc-1-1.png"
   },
   p: {
     symbol: "/p/",
@@ -107,6 +121,8 @@ export const PHONEME_DATA = {
     visualGuide: "👄 Press lips together, pop open",
     difficulty: "easy",
     practiceWords: ["pen", "play", "stop", "please"],
+    tongueImage: "https://i.postimg.cc/zGkzBHL4/plosive-mouth-positions-p-1.png",
+    lipImage: "https://i.postimg.cc/rw85PW5C/Gemini-Generated-Image-y1h0i4y1h0i4y1h0-1.png"
   },
   y: {
     symbol: "/j/",
@@ -117,6 +133,8 @@ export const PHONEME_DATA = {
     visualGuide: "😊 Tongue up, lips slightly round",
     difficulty: "medium",
     practiceWords: ["yes", "you", "yellow", "year"],
+    tongueImage: "https://via.placeholder.com/200x150.png?text=Tongue+Position",
+    lipImage: "https://via.placeholder.com/200x150.png?text=Lip+Position"
   },
   s: {
     symbol: "/s/",
@@ -127,6 +145,8 @@ export const PHONEME_DATA = {
     visualGuide: "😬 Teeth together, air hisses out",
     difficulty: "hard",
     practiceWords: ["sun", "see", "yes", "stop"],
+    tongueImage: "https://via.placeholder.com/200x150.png?text=Tongue+Position",
+    lipImage: "https://via.placeholder.com/200x150.png?text=Lip+Position"
   },
   n: {
     symbol: "/n/",
@@ -137,6 +157,8 @@ export const PHONEME_DATA = {
     visualGuide: "👅 Tongue tip up, air through nose",
     difficulty: "medium",
     practiceWords: ["no", "nice", "done", "sun"],
+    tongueImage: "https://via.placeholder.com/200x150.png?text=Tongue+Position",
+    lipImage: "https://via.placeholder.com/200x150.png?text=Lip+Position"
   },
   o: {
     symbol: "/o/",
@@ -147,6 +169,8 @@ export const PHONEME_DATA = {
     visualGuide: "😮 Round lips, tongue back",
     difficulty: "medium",
     practiceWords: ["hot", "stop", "more", "no"],
+    tongueImage: "https://via.placeholder.com/200x150.png?text=Tongue+Position",
+    lipImage: "https://via.placeholder.com/200x150.png?text=Lip+Position"
   },
   t: {
     symbol: "/t/",
@@ -157,6 +181,8 @@ export const PHONEME_DATA = {
     visualGuide: "👅 Tongue tip up, quick release",
     difficulty: "easy",
     practiceWords: ["top", "hot", "stop", "cat"],
+    tongueImage: "https://via.placeholder.com/200x150.png?text=Tongue+Position",
+    lipImage: "https://via.placeholder.com/200x150.png?text=Lip+Position"
   },
   m: {
     symbol: "/m/",
@@ -167,6 +193,8 @@ export const PHONEME_DATA = {
     visualGuide: "👄 Lips together, hum through nose",
     difficulty: "easy",
     practiceWords: ["more", "mom", "time", "come"],
+    tongueImage: "https://via.placeholder.com/200x150.png?text=Tongue+Position",
+    lipImage: "https://via.placeholder.com/200x150.png?text=Lip+Position"
   },
   r: {
     symbol: "/r/",
@@ -177,6 +205,8 @@ export const PHONEME_DATA = {
     visualGuide: "😊 Tongue curled, lips round",
     difficulty: "hard",
     practiceWords: ["red", "more", "run", "car"],
+    tongueImage: "https://via.placeholder.com/200x150.png?text=Tongue+Position",
+    lipImage: "https://via.placeholder.com/200x150.png?text=Lip+Position"
   },
   d: {
     symbol: "/d/",
@@ -187,6 +217,8 @@ export const PHONEME_DATA = {
     visualGuide: "👅 Tongue tip up, voice added",
     difficulty: "medium",
     practiceWords: ["done", "day", "red", "bed"],
+    tongueImage: "https://via.placeholder.com/200x150.png?text=Tongue+Position",
+    lipImage: "https://via.placeholder.com/200x150.png?text=Lip+Position"
   },
   'eh': {
     symbol: '/eh/',
@@ -196,7 +228,9 @@ export const PHONEME_DATA = {
     example: 'bed, red, pen',
     visualGuide: '😊 Smile slightly, tongue forward',
     difficulty: 'medium',
-    practiceWords: ['bed', 'red', 'pen', 'yes']
+    practiceWords: ['bed', 'red', 'pen', 'yes'],
+    tongueImage: "https://i.postimg.cc/yNWPd9QB/Diagram-illustrating-the-tongue-positions-for-the-front-cardinal-vowels-Wikimedia-1.png",
+    lipImage: "https://i.postimg.cc/Hxb2CzKY/Gemini-Generated-Image-63bpo163bpo163bp-1.png"
   },
 };
 

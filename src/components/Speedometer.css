@@ -1,0 +1,103 @@
+.speedometer-container {
+  background: #f7fafc;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.speedometer-container h4 {
+  font-size: 1.1rem;
+  color: #2d3748;
+  margin-bottom: 1rem;
+}
+
+.gauge-area {
+  width: 150px;
+  height: 75px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.gauge {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  position: relative;
+}
+
+.gauge-background {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: conic-gradient(
+    from -90deg,
+    #4caf50,
+    #ffeb3b 25%,
+    #f44336 50%,
+    #ffeb3b 75%,
+    #4caf50
+  );
+  -webkit-mask-image: linear-gradient(to top, transparent 50%, black 50%);
+  mask-image: linear-gradient(to top, transparent 50%, black 50%);
+}
+
+.gauge-needle {
+  position: absolute;
+  bottom: 50%;
+  left: 50%;
+  width: 2px;
+  height: 60px;
+  background: #2d3748;
+  transform-origin: bottom center;
+  border-radius: 2px 2px 0 0;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+}
+
+.gauge-center-dot {
+  position: absolute;
+  bottom: calc(50% - 5px);
+  left: calc(50% - 5px);
+  width: 10px;
+  height: 10px;
+  background: #4a5568;
+  border-radius: 50%;
+  border: 2px solid white;
+}
+
+.speed-labels {
+  display: flex;
+  justify-content: space-between;
+  width: 160px;
+  font-size: 0.7rem;
+  color: #718096;
+  padding: 0 5px;
+}
+
+.current-speed-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2d3748;
+  margin-top: 0.5rem;
+}
+
+.speed-indicator {
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-top: 0.25rem;
+}
+
+.speed-indicator.too-slow {
+  color: #f59e0b; /* amber-500 */
+}
+
+.speed-indicator.perfect {
+  color: #10b981; /* emerald-500 */
+}
+
+.speed-indicator.too-fast {
+  color: #ef4444; /* red-500 */
+}

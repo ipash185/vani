@@ -89,6 +89,14 @@ class ProgressService {
             priority: 8,
             examples: ["please help", "please stop", "please more"],
           },
+          {
+            id: 'want',
+            word: 'want',
+            phonemes: ['w', 'aa', 'n', 't'],
+            meaning: 'To have a desire for something',
+            priority: 9,
+            examples: ['I want that', 'I want more', 'do you want?']
+          }
         ],
         isUsingAISentences: false,
         isUsingAIWords: false,

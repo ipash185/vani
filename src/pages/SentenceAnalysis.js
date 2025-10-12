@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
+import PerformancePlot from "../components/PerformancePlot";
+import Speedometer from "../components/Speedometer";
 import {
   Mic,
   MicOff,
@@ -352,60 +354,13 @@ const SentenceAnalysis = () => {
             </div>
 
             <div className="metrics-grid">
-              <div className="metric-card">
-                <div className="metric-icon">
-                  <BarChart3 size={24} />
-                </div>
-                <div className="metric-content">
-                  <h4>Overall Accuracy</h4>
-                  <div className="metric-value">
-                    {Math.round(analysis.accuracy)}%
-                  </div>
-                  <div className="metric-bar">
-                    <div
-                      className="metric-fill"
-                      style={{ width: `${analysis.accuracy}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
+              {analysis.accuracy != null && analysis.clarity != null && (
+                <PerformancePlot accuracy={analysis.accuracy} clarity={analysis.clarity / 100} />
+              )}
 
-              <div className="metric-card">
-                <div className="metric-icon">
-                  <Volume2 size={24} />
-                </div>
-                <div className="metric-content">
-                  <h4>Clarity</h4>
-                  <div className="metric-value">
-                    {Math.round(analysis.clarity)}%
-                  </div>
-                  <div className="metric-bar">
-                    <div
-                      className="metric-fill"
-                      style={{ width: `${analysis.clarity}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="metric-card">
-                <div className="metric-icon">
-                  <CheckCircle size={24} />
-                </div>
-                <div className="metric-content">
-                  <h4>Speaking Speed</h4>
-                  <div className="metric-value">
-                    {analysis.speed.toFixed(1)}x
-                  </div>
-                  <div className="metric-description">
-                    {analysis.speed < 0.8
-                      ? "Too slow"
-                      : analysis.speed > 1.2
-                      ? "Too fast"
-                      : "Perfect speed"}
-                  </div>
-                </div>
-              </div>
+              {analysis.speed != null && (
+                <Speedometer speed={analysis.speed} />
+              )}
             </div>
 
             <div className="phoneme-breakdown">

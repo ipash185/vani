@@ -863,6 +863,8 @@
 }
 
 .phonemes-display {
+  margin-bottom: 0.75rem;
+  justify-content: left;
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
@@ -1095,11 +1097,8 @@
 
 .phoneme-description {
   color: #718096;
+  text-align: left;
   font-size: 0.9rem;
-  margin-bottom: 0.75rem;
-}
-
-.phonemes-display {
   margin-bottom: 0.75rem;
 }
 
@@ -1174,11 +1173,6 @@
   border-radius: 8px;
   text-align: center;
   border: 1px solid #e2e8f0;
-}
-
-.metric-icon {
-  margin-bottom: 0.5rem;
-  color: #667eea;
 }
 
 .metric-content h5 {
@@ -1335,9 +1329,10 @@
 /* Real-time Feedback Meters */
 .real-time-meters {
   display: flex;
-  justify-content: center;
-  gap: 2rem;
-  margin: 2rem 0;
+  align-items: center; /* Center items vertically */
+  justify-content: center; /* Center items horizontally */
+  gap: 1.5rem; /* Add spacing between items */
+  margin: 2rem 0; /* Optional: Add vertical spacing */
   padding: 1.5rem;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 16px;
@@ -1399,15 +1394,12 @@
 }
 
 .meter-target.h-target {
-  top: 60%;
 }
 
 .meter-target.m-target {
-  top: 70%;
 }
 
 .meter-target.s-target {
-  top: 50%;
 }
 
 .meter-value {
@@ -1503,4 +1495,65 @@
   .meter-label {
     font-size: 0.8rem;
   }
+}
+
+.mastered-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #4caf50; /* Green background */
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 1.2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.mastered-icon {
+  margin-right: 8px;
+}
+
+.mastered-text {
+  font-size: 1rem;
+}
+
+/* Add to your existing CSS file */
+
+.record-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem; /* Add space between buttons and meters */
+}
+
+.meter-toggle {
+  background-color: #f0f0f0;
+  color: #555;
+  border: 1px solid #ddd;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin: 0; /* Ensure no extra margins */
+}
+
+.meter-toggle:hover {
+  background-color: #e5e5e5;
+}
+
+.meter-toggle.active {
+  background-color: #cceeff; /* A light blue to show it's on */
+  color: #007bff;
+  border-color: #007bff;
+}
+
+.meter-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
