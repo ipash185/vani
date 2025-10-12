@@ -36,12 +36,23 @@ const PhonemeLearning = () => {
   const [lastPrediction, setLastPrediction] = useState(null);
   const [recordingDuration, setRecordingDuration] = useState(0);
   
+  // Real-time feedback meters state
+  const [hMeterValue, setHMeterValue] = useState(0);
+  const [mMeterValue, setMMeterValue] = useState(0);
+  const [sMeterValue, setSMeterValue] = useState(0);
+  const [isRealTimeRecording, setIsRealTimeRecording] = useState(false);
+  
   const mediaRecorderRef = useRef(null);
   const audioRef = useRef(null);
   const animationRef = useRef(null);
   const recordedChunksRef = useRef([]);
   const recordingTimerRef = useRef(null);
   const durationTimerRef = useRef(null);
+  
+  // Real-time audio analysis refs
+  const audioContextRef = useRef(null);
+  const analyserRef = useRef(null);
+  const animationFrameRef = useRef(null);
 
   // Available phonemes for learning
   const availablePhonemes = ['h', 'l', 'p', 'eh'];
@@ -76,6 +87,10 @@ const PhonemeLearning = () => {
       if (durationTimerRef.current) {
         clearInterval(durationTimerRef.current);
       }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      stopRealTimeRecording();
     };
   }, [phonemeId, state.progress]);
 
@@ -104,6 +119,9 @@ const PhonemeLearning = () => {
       mediaRecorderRef.current.start();
       setIsRecording(true);
       
+      // Start real-time recording for meters
+      await startRealTimeRecording();
+      
       // Update duration for UI display
       durationTimerRef.current = setInterval(() => {
         setRecordingDuration(prev => prev + 100);
@@ -128,6 +146,9 @@ const PhonemeLearning = () => {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
       setIsProcessing(true);
+      
+      // Stop real-time recording
+      stopRealTimeRecording();
       
       // Clear timers
       if (recordingTimerRef.current) {
@@ -198,6 +219,140 @@ const PhonemeLearning = () => {
     setTimeout(() => {
       setIsPlaying(false);
     }, 1000);
+  };
+
+  // Real-time audio analysis functions
+  const initRealTimeAudio = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      const source = audioContextRef.current.createMediaStreamSource(stream);
+      
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      analyserRef.current.fftSize = 2048;
+      analyserRef.current.smoothingTimeConstant = 0.8;
+      source.connect(analyserRef.current);
+      
+      return true;
+    } catch (error) {
+      console.error('Error initializing real-time audio:', error);
+      return false;
+    }
+  };
+
+  const analyzeRealTimeAudio = () => {
+    if (!analyserRef.current || !isRealTimeRecording) return;
+
+    const dataArray = new Float32Array(analyserRef.current.frequencyBinCount);
+    analyserRef.current.getFloatFrequencyData(dataArray);
+
+    // Convert dB to linear magnitudes
+    const magnitudes = Array.from(dataArray, v => Math.pow(10, v / 20));
+    const sampleRate = audioContextRef.current.sampleRate;
+    const binWidth = sampleRate / 2 / analyserRef.current.frequencyBinCount;
+
+    // H-meter analysis (high-frequency energy and spectral flatness)
+    let totalEnergy = 0;
+    let lowFreqEnergy = 0;
+    let highFreqEnergy = 0;
+    const lowFreqLimit = 350;
+    const highFreqStart = 1000;
+
+    for (let i = 0; i < magnitudes.length; i++) {
+      const freq = i * binWidth;
+      const energy = magnitudes[i];
+      totalEnergy += energy;
+      if (freq < lowFreqLimit) lowFreqEnergy += energy;
+      else if (freq > highFreqStart) highFreqEnergy += energy;
+    }
+
+    const lowRatio = totalEnergy > 0 ? lowFreqEnergy / totalEnergy : 0;
+    const highRatio = totalEnergy > 0 ? highFreqEnergy / totalEnergy : 0;
+
+    // Calculate spectral flatness
+    let logSum = 0;
+    for (let i = 0; i < magnitudes.length; i++) {
+      const val = Math.max(magnitudes[i], 1e-12);
+      logSum += Math.log(val);
+    }
+    const geoMean = Math.exp(logSum / magnitudes.length);
+    const meanEnergy = totalEnergy / magnitudes.length;
+    const spectralFlatness = geoMean / (meanEnergy + 1e-12);
+
+    // H-meter value (0-100)
+    const hValue = totalEnergy > 1e-2 && lowRatio < 0.15 && highRatio > 0.35 && spectralFlatness > 0.2 
+      ? Math.min(100, (highRatio * 200 + spectralFlatness * 100)) 
+      : 0;
+
+    // M-meter analysis (pitch detection for tonal sounds)
+    const byteDataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+    analyserRef.current.getByteFrequencyData(byteDataArray);
+    
+    // Simple pitch detection - find peak frequency
+    let maxValue = 0;
+    let maxIndex = 0;
+    for (let i = 0; i < byteDataArray.length; i++) {
+      if (byteDataArray[i] > maxValue) {
+        maxValue = byteDataArray[i];
+        maxIndex = i;
+      }
+    }
+    
+    const peakFreq = maxIndex * binWidth;
+    const rms = Math.sqrt(byteDataArray.reduce((sum, val) => sum + val * val, 0) / byteDataArray.length);
+    
+    // M-meter value (0-100) - good for humming/tonal sounds
+    const mValue = rms > 5 && peakFreq >= 70 && peakFreq <= 500 
+      ? Math.min(100, (rms / 10) * 50 + (peakFreq > 100 && peakFreq < 400 ? 50 : 0))
+      : 0;
+
+    // S-meter analysis (hissing sounds in 4-8kHz range)
+    const hissStartFreq = 4000;
+    const hissEndFreq = 8000;
+    const lowFreqEnd = 2000;
+    
+    let hissEnergy = 0;
+    let lowEnergy = 0;
+
+    for (let i = 0; i < byteDataArray.length; i++) {
+      const freq = i * binWidth;
+      const amplitude = byteDataArray[i] / 255.0;
+
+      if (freq >= hissStartFreq && freq <= hissEndFreq) {
+        hissEnergy += amplitude;
+      } else if (freq < lowFreqEnd) {
+        lowEnergy += amplitude;
+      }
+    }
+    
+    // S-meter value (0-100)
+    const sValue = hissEnergy < 1.0 ? 0 : Math.min(100, (hissEnergy / (lowEnergy + 1)) * 20);
+
+    setHMeterValue(hValue);
+    setMMeterValue(mValue);
+    setSMeterValue(sValue);
+
+    if (isRealTimeRecording) {
+      animationFrameRef.current = requestAnimationFrame(analyzeRealTimeAudio);
+    }
+  };
+
+  const startRealTimeRecording = async () => {
+    const success = await initRealTimeAudio();
+    if (success) {
+      setIsRealTimeRecording(true);
+      analyzeRealTimeAudio();
+    }
+  };
+
+  const stopRealTimeRecording = () => {
+    setIsRealTimeRecording(false);
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    setHMeterValue(0);
+    setMMeterValue(0);
+    setSMeterValue(0);
   };
 
   const nextStep = () => {
@@ -312,6 +467,45 @@ const PhonemeLearning = () => {
             {isProcessing ? 'Processing...' : isRecording ? `Recording... ${(2000 - recordingDuration) / 1000}s` : 'Record Phoneme'}
           </motion.button>
           
+          {/* Real-time Feedback Meters */}
+          <div className="real-time-meters" data-phoneme={phonemeId}>
+            <div className="meter-container">
+              <div className="meter-label">H-Meter</div>
+              <div className="meter-bar">
+                <div 
+                  className="meter-fill h-meter"
+                  style={{ height: `${hMeterValue}%` }}
+                ></div>
+                <div className="meter-target h-target"></div>
+              </div>
+              <div className="meter-value">{Math.round(hMeterValue)}%</div>
+            </div>
+            
+            <div className="meter-container">
+              <div className="meter-label">M-Meter</div>
+              <div className="meter-bar">
+                <div 
+                  className="meter-fill m-meter"
+                  style={{ height: `${mMeterValue}%` }}
+                ></div>
+                <div className="meter-target m-target"></div>
+              </div>
+              <div className="meter-value">{Math.round(mMeterValue)}%</div>
+            </div>
+            
+            <div className="meter-container">
+              <div className="meter-label">S-Meter</div>
+              <div className="meter-bar">
+                <div 
+                  className="meter-fill s-meter"
+                  style={{ height: `${sMeterValue}%` }}
+                ></div>
+                <div className="meter-target s-target"></div>
+              </div>
+              <div className="meter-value">{Math.round(sMeterValue)}%</div>
+            </div>
+          </div>
+          
           <div className="practice-stats">
             <div className="stat">
               <span className="stat-label">Practice Count:</span>
@@ -341,7 +535,7 @@ const PhonemeLearning = () => {
                 <div className="performance-metrics-horizontal">
                   <div className="metric-card">
                     <div className="metric-icon">
-                      <CheckCircle size={20} />
+                      🎯
                     </div>
                     <div className="metric-content">
                       <h5>Target Phoneme</h5>
@@ -351,7 +545,7 @@ const PhonemeLearning = () => {
                   
                   <div className="metric-card">
                     <div className="metric-icon">
-                      <Mic size={20} />
+                      🎤
                     </div>
                     <div className="metric-content">
                       <h5>You Said</h5>
@@ -363,7 +557,7 @@ const PhonemeLearning = () => {
                   
                   <div className="metric-card">
                     <div className="metric-icon">
-                      <BarChart3 size={20} />
+                      📊
                     </div>
                     <div className="metric-content">
                       <h5>Confidence</h5>
@@ -373,7 +567,7 @@ const PhonemeLearning = () => {
                   
                   <div className="metric-card">
                     <div className="metric-icon">
-                      <Star size={20} />
+                      ⭐
                     </div>
                     <div className="metric-content">
                       <h5>Accuracy</h5>

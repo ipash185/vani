@@ -262,7 +262,7 @@ app.post("/api/generate-words", async (req, res) => {
     
 Current progress: ${JSON.stringify(progress, null, 2)}
 
-Generate exactly 8 new practice words that are:
+Generate exactly 9 new practice words that are:
 1. Essential words for daily communication
 2. Appropriate for their current skill level
 3. Focused on practical communication needs
@@ -270,7 +270,7 @@ Generate exactly 8 new practice words that are:
 5. Progressive in difficulty
 6. Include Arpabet phonemes for each word
 
-Return ONLY a JSON array of 8 word objects, each with id, word, phonemes, meaning, priority, and examples. Example format:
+Return ONLY a JSON array of 9 word objects, each with id, word, phonemes, meaning, priority, and examples. Example format:
 [
   {"id": "water", "word": "water", "phonemes": ["w", "aa", "t", "er"], "meaning": "Clear liquid for drinking", "priority": 1, "examples": ["I want water", "water please", "cold water"]},
   {"id": "food", "word": "food", "phonemes": ["f", "uw", "d"], "meaning": "Something to eat", "priority": 2, "examples": ["I want food", "food please", "good food"]}
@@ -337,11 +337,11 @@ Return ONLY a JSON array of 8 word objects, each with id, word, phonemes, meanin
     }
 
     // 4️⃣ Optionally ensure exactly 8 entries
-    if (words.length !== 8) {
+    if (words.length !== 9) {
       console.warn(
-        `Expected 8 words, got ${words.length}. Trimming or regenerating.`
+        `Expected 9 words, got ${words.length}. Trimming or regenerating.`
       );
-      words = words.slice(0, 8);
+      words = words.slice(0, 9);
     }
 
     res.json({
