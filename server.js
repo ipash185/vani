@@ -204,7 +204,7 @@ app.post("/api/generate-sentences", async (req, res) => {
         headers: {
           Authorization: `Bearer ${OPENROUTER_API_KEY}`,
           "Content-Type": "application/json",
-          "HTTP-Referer": "http://localhost:3000", // Or your actual site URL
+          "HTTP-Referer": "https://vani-the-rook.netlify.app", // Or your actual site URL
           "X-Title": "Vani Speech Practice", // Or your actual site name
         },
       }
@@ -293,7 +293,7 @@ Return ONLY a JSON array of 9 word objects, each with id, word, phonemes, meanin
         headers: {
           Authorization: `Bearer ${OPENROUTER_API_KEY}`,
           "Content-Type": "application/json",
-          "HTTP-Referer": "http://localhost:3000",
+          "HTTP-Referer": "https://vani-the-rook.netlify.app",
           "X-Title": "Vani Speech Practice",
         },
       }
@@ -646,3 +646,4 @@ async function startServer() {
 }
 
 startServer();
+
