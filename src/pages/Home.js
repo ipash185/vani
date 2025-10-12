@@ -1,45 +1,84 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { 
-  Play, 
-  BookOpen, 
-  Mic, 
-  BarChart3, 
-  Trophy, 
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import {
+  Play,
+  BookOpen,
+  Mic,
+  BarChart3,
+  Trophy,
   Star,
   Target,
   Users,
   Clock,
   Award,
   TrendingUp,
-  CheckCircle
-} from 'lucide-react';
-import { useApp } from '../context/AppContext';
-import { CORE_WORDS } from '../data/phonemes';
-import progressService from '../services/progressService';
+  CheckCircle,
+} from "lucide-react";
+import { useApp } from "../context/AppContext";
+import { CORE_WORDS } from "../data/phonemes";
+import progressService from "../services/progressService";
+import dailyChallengeService from "../services/dailyChallengeService";
+import { differenceInSeconds } from "date-fns";
 
 const Home = () => {
   const { state } = useApp();
   const [realProgress, setRealProgress] = useState(null);
   const [statistics, setStatistics] = useState(null);
+  const [dailyChallenge, setDailyChallenge] = useState(null);
+  const [timeLeft, setTimeLeft] = useState("");
 
-  // Load real progress data
+  // Load real progress data and daily challenge
   useEffect(() => {
     const currentProgress = progressService.getProgress();
     const currentStats = progressService.getStatistics();
+    const challenge = dailyChallengeService.getDailyChallenge();
+
     setRealProgress(currentProgress);
     setStatistics(currentStats);
+    setDailyChallenge(challenge);
   }, []);
+
+  // Timer for daily challenge
+  useEffect(() => {
+    if (!dailyChallenge) return;
+
+    const interval = setInterval(() => {
+      const now = new Date();
+      const expiry = new Date(dailyChallenge.expiresAt);
+      const secondsLeft = differenceInSeconds(expiry, now);
+
+      if (secondsLeft <= 0) {
+        setTimeLeft("00:00:00");
+        clearInterval(interval);
+        // Optionally, refresh the challenge
+        setDailyChallenge(dailyChallengeService.getDailyChallenge());
+        return;
+      }
+
+      const hours = Math.floor(secondsLeft / 3600);
+      const minutes = Math.floor((secondsLeft % 3600) / 60);
+      const seconds = secondsLeft % 60;
+
+      setTimeLeft(
+        `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
+          2,
+          "0"
+        )}:${String(seconds).padStart(2, "0")}`
+      );
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [dailyChallenge]);
 
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1
-      }
-    }
+        staggerChildren: 0.1,
+      },
+    },
   };
 
   const itemVariants = {
@@ -48,75 +87,75 @@ const Home = () => {
       opacity: 1,
       y: 0,
       transition: {
-        duration: 0.5
-      }
-    }
+        duration: 0.5,
+      },
+    },
   };
 
   const quickActions = [
     {
-      title: 'Learn Phonemes',
-      description: 'Start with individual sounds',
+      title: "Learn Phonemes",
+      description: "Start with individual sounds",
       icon: BookOpen,
-      link: '/phoneme/h',
-      color: 'linear-gradient(45deg, #ff6b6b, #ff8e8e)',
+      link: "/phoneme/h",
+      color: "linear-gradient(45deg, #ff6b6b, #ff8e8e)",
       progress: state.progress?.phonemesLearned?.length || 0,
-      total: 12
+      total: 12,
     },
     {
-      title: 'Practice Words',
-      description: 'Combine sounds into words',
+      title: "Practice Words",
+      description: "Combine sounds into words",
       icon: Mic,
-      link: '/word/help',
-      color: 'linear-gradient(45deg, #4ecdc4, #44a08d)',
+      link: "/word/help",
+      color: "linear-gradient(45deg, #4ecdc4, #44a08d)",
       progress: state.progress?.wordsCompleted?.length || 0,
-      total: CORE_WORDS.length
+      total: CORE_WORDS.length,
     },
     {
-      title: 'Sentence Analysis',
-      description: 'Practice full sentences',
+      title: "Sentence Analysis",
+      description: "Practice full sentences",
       icon: BarChart3,
-      link: '/sentence',
-      color: 'linear-gradient(45deg, #45b7d1, #96c93d)',
+      link: "/sentence",
+      color: "linear-gradient(45deg, #45b7d1, #96c93d)",
       progress: realProgress?.totalSentencesPracticed || 0,
-      total: 50
+      total: 50,
     },
     {
-      title: 'View Progress',
-      description: 'Track your achievements',
+      title: "View Progress",
+      description: "Track your achievements",
       icon: Trophy,
-      link: '/progress',
-      color: 'linear-gradient(45deg, #f093fb, #f5576c)',
+      link: "/progress",
+      color: "linear-gradient(45deg, #f093fb, #f5576c)",
       progress: realProgress?.totalSessions || 0,
-      total: 100
-    }
+      total: 100,
+    },
   ];
 
   const stats = [
     {
-      label: 'Sessions Completed',
+      label: "Sessions Completed",
       value: realProgress?.totalSessions || 0,
       icon: BarChart3,
-      color: '#ffd700'
+      color: "#ffd700",
     },
     {
-      label: 'Current Streak',
+      label: "Current Streak",
       value: realProgress?.streak || 0,
       icon: Target,
-      color: '#ff6b6b'
+      color: "#ff6b6b",
     },
     {
-      label: 'Sentences Practiced',
+      label: "Sentences Practiced",
       value: realProgress?.totalSentencesPracticed || 0,
       icon: Mic,
-      color: '#4ecdc4'
+      color: "#4ecdc4",
     },
     {
-      label: 'Average Accuracy',
+      label: "Average Accuracy",
       value: Math.round(realProgress?.averageAccuracy || 0),
       icon: TrendingUp,
-      color: '#45b7d1'
-    }
+      color: "#45b7d1",
+    },
   ];
 
   return (
@@ -131,19 +170,22 @@ const Home = () => {
         <motion.div variants={itemVariants} className="welcome-section">
           <div className="welcome-content">
             <h1>Welcome to VANI! 🎯</h1>
-            <p>Your speech learning adventure starts here. Let's practice together and improve your communication skills!</p>
+            <p>
+              Your speech learning adventure starts here. Let's practice
+              together and improve your communication skills!
+            </p>
           </div>
           <div className="welcome-illustration">
             <motion.div
               className="floating-emoji"
-              animate={{ 
+              animate={{
                 y: [0, -10, 0],
-                rotate: [0, 5, -5, 0]
+                rotate: [0, 5, -5, 0],
               }}
-              transition={{ 
+              transition={{
                 duration: 3,
                 repeat: Infinity,
-                ease: "easeInOut"
+                ease: "easeInOut",
               }}
             >
               🗣️
@@ -184,7 +226,7 @@ const Home = () => {
             {quickActions.map((action, index) => {
               const Icon = action.icon;
               const progressPercentage = (action.progress / action.total) * 100;
-              
+
               return (
                 <motion.div
                   key={action.title}
@@ -194,7 +236,7 @@ const Home = () => {
                   transition={{ delay: index * 0.1 }}
                 >
                   <Link to={action.link} className="action-link">
-                    <div 
+                    <div
                       className="action-header"
                       style={{ background: action.color }}
                     >
@@ -205,11 +247,11 @@ const Home = () => {
                       <p>{action.description}</p>
                       <div className="action-progress">
                         <div className="progress-bar">
-                          <div 
+                          <div
                             className="progress-fill"
-                            style={{ 
+                            style={{
                               width: `${progressPercentage}%`,
-                              background: action.color
+                              background: action.color,
                             }}
                           />
                         </div>
@@ -229,7 +271,7 @@ const Home = () => {
         <motion.div variants={itemVariants} className="learning-modes-section">
           <h2>Choose Your Learning Mode</h2>
           <div className="modes-grid">
-            <motion.div 
+            <motion.div
               className="mode-card guided-mode"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -248,7 +290,7 @@ const Home = () => {
               </Link>
             </motion.div>
 
-            <motion.div 
+            <motion.div
               className="mode-card practice-mode"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -270,31 +312,62 @@ const Home = () => {
         </motion.div>
 
         {/* Daily Challenge */}
-        <motion.div variants={itemVariants} className="daily-challenge-section">
-          <div className="challenge-card">
-            <div className="challenge-header">
-              <h3>🌟 Daily Challenge</h3>
-              <div className="challenge-timer">
-                <Clock size={16} />
-                <span>23:45:12</span>
+        {dailyChallenge && (
+          <motion.div
+            variants={itemVariants}
+            className="daily-challenge-section"
+          >
+            <div
+              className={`challenge-card ${
+                dailyChallenge.isCompleted ? "completed" : ""
+              }`}
+            >
+              <div className="challenge-header">
+                <h3>🌟 Daily Challenge</h3>
+                {!dailyChallenge.isCompleted && (
+                  <div className="challenge-timer">
+                    <Clock size={16} />
+                    <span>{timeLeft}</span>
+                  </div>
+                )}
               </div>
-            </div>
-            <p>Practice the phoneme /h/ 5 times today to earn bonus points!</p>
-            <div className="challenge-progress">
-              <div className="progress-bar">
-                <div className="progress-fill" style={{ width: '60%' }} />
+              <p>{dailyChallenge.description}</p>
+              <div className="challenge-progress">
+                <div className="progress-bar">
+                  <div
+                    className="progress-fill"
+                    style={{
+                      width: `${
+                        (dailyChallenge.currentCount /
+                          dailyChallenge.requiredCount) *
+                        100
+                      }%`,
+                    }}
+                  />
+                </div>
+                <span>
+                  {dailyChallenge.currentCount}/{dailyChallenge.requiredCount}{" "}
+                  completed
+                </span>
               </div>
-              <span>3/5 completed</span>
+              {dailyChallenge.isCompleted ? (
+                <div className="challenge-completed">
+                  <CheckCircle size={20} />
+                  <span>
+                    Challenge Completed! +{dailyChallenge.bonusPoints} points!
+                  </span>
+                </div>
+              ) : (
+                <Link to={dailyChallenge.link} className="btn btn-success">
+                  Take Challenge
+                </Link>
+              )}
             </div>
-            <Link to="/phoneme/h" className="btn btn-success">
-              Take Challenge
-            </Link>
-          </div>
-        </motion.div>
+          </motion.div>
+        )}
       </motion.div>
     </div>
   );
 };
 
 export default Home;
-
