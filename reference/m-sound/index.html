@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sound Safari</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>Sound Safari 🦁</h1>
+        <a href="#" class="back-button">← Sound Menu</a>
+    </header>
+
+    <main class="practice-area">
+        <div class="column target-column">
+            <div id="soundDisplay" class="sound-display" style="color: #10B981;">M</div>
+            <div id="exampleWord" class="example-word">as in "me" 🎵</div>
+            <div class="mouth-diagram">
+                <img id="mouthDiagram" src="https://i.pinimg.com/474x/7b/46/4e/7b464e7a5b1287402ef0c89405815bd0.jpg" alt="Mouth diagram for 'M' sound">
+            </div>
+        </div>
+
+        <div class="column dashboard-column">
+			<div id="hummingFlower" class="feedback-visual active">
+				<svg id="flower" class="flower-svg" viewBox="0 0 100 100">
+					<g class="flower-target-outline">
+						<path d="M50,50 m-10,0 a10,10 0 1,0 20,0 a10,10 0 1,0 -20,0"/>
+						<path d="M50,15 C65,20 65,40 50,50 C35,40 35,20 50,15 Z"/>
+						<path d="M85,50 C80,35 60,35 50,50 C60,65 80,65 85,50 Z"/>
+						<path d="M50,85 C35,80 35,60 50,50 C65,60 65,80 50,85 Z"/>
+						<path d="M15,50 C20,35 40,35 50,50 C40,65 20,65 15,50 Z"/>
+					</g>
+					<g id="flowerPetals" class="flower-petals">
+						<path class="petal" d="M50,15 C65,20 65,40 50,50 C35,40 35,20 50,15 Z"/>
+						<path class="petal" d="M85,50 C80,35 60,35 50,50 C60,65 80,65 85,50 Z"/>
+						<path class="petal" d="M50,85 C35,80 35,60 50,50 C65,60 65,80 50,85 Z"/>
+						<path class="petal" d="M15,50 C20,35 40,35 50,50 C40,65 20,65 15,50 Z"/>
+						<circle class="flower-center" cx="50" cy="50" r="12"/>
+					</g>
+				</svg>
+				<div id="successText" class="success-text"></div>
+				<div class="visual-label">Make the flower bloom with a steady "mmmm"</div>
+			</div>
+
+            <div class="mic-container">
+                <button id="recordBtn" class="mic-button">🎤</button>
+            </div>
+            <div id="debugInfo" class="debug-info"></div>
+        </div>
+
+        <div class="column scoreboard-column">
+            <div class="mascot">
+                 <img src="https://img.freepik.com/free-vector/cute-lion-mascot-cartoon-illustration-animal-wildlife-icon-concept_138676-1906.jpg?semt=ais_hybrid&w=740&q=80" alt="Friendly lion mascot">
+            </div>
+            <div id="feedbackText" class="feedback-text">
+                Hold the mic to try!
+            </div>
+        </div>
+    </main>
+    
+    <script type="module" src="script.js"></script>
+</body>
+</html>

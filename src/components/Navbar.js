@@ -42,7 +42,7 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
 
   const navItems = [
     { path: '/', icon: Home, label: 'Home' },
-    { path: '/phoneme/h', icon: BookOpen, label: 'Learn' },
+    { path: '/phoneme', icon: BookOpen, label: 'Learn' },
     // --- CHANGE 5: Use the dynamic practiceLink state variable ---
     { path: practiceLink, icon: Mic, label: 'Practice' },
     { path: '/sentence', icon: BarChart3, label: 'Sentences' },

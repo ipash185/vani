@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Play, 
@@ -12,7 +12,10 @@ import {
   Mic,
   MicOff,
   Trophy,
-  Star
+  Star,
+  BookOpen,
+  X,
+  BarChart3
 } from 'lucide-react';
 import axios from 'axios';
 import { useApp } from '../context/AppContext';
@@ -21,6 +24,7 @@ import { PHONEME_DATA, DIFFICULTY_LEVELS } from '../data/phonemes';
 const PhonemeLearning = () => {
   const { phonemeId } = useParams();
   const { state, actions } = useApp();
+  const navigate = useNavigate();
   const [isRecording, setIsRecording] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
@@ -39,24 +43,17 @@ const PhonemeLearning = () => {
   const recordingTimerRef = useRef(null);
   const durationTimerRef = useRef(null);
 
-  const phoneme = PHONEME_DATA[phonemeId];
-  const difficulty = DIFFICULTY_LEVELS[phoneme.difficulty];
+  // Available phonemes for learning
+  const availablePhonemes = ['h', 'l', 'p', 'eh'];
+  
+  const phoneme = phonemeId ? PHONEME_DATA[phonemeId] : null;
+  const difficulty = phoneme ? DIFFICULTY_LEVELS[phoneme.difficulty] : null;
 
   const steps = [
     {
       title: 'Visual Guide',
       content: 'Learn the correct mouth and tongue position',
       component: 'VisualGuide'
-    },
-    {
-      title: 'Listen & Repeat',
-      content: 'Listen to the sound and practice',
-      component: 'ListenRepeat'
-    },
-    {
-      title: 'Practice Words',
-      content: 'Practice with example words',
-      component: 'PracticeWords'
     },
     {
       title: 'Test Your Skills',
@@ -67,7 +64,7 @@ const PhonemeLearning = () => {
 
   useEffect(() => {
     // Check if phoneme is already learned
-    if (state.progress?.phonemesLearned?.includes(phonemeId)) {
+    if (phonemeId && state.progress?.phonemesLearned?.includes(phonemeId)) {
       setIsCompleted(true);
     }
     
@@ -290,92 +287,6 @@ const PhonemeLearning = () => {
     </div>
   );
 
-  const ListenRepeat = () => (
-    <div className="listen-repeat">
-      <div className="audio-section">
-        <motion.button
-          className="play-button"
-          onClick={playPhoneme}
-          disabled={isPlaying}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          {isPlaying ? <Pause size={32} /> : <Play size={32} />}
-        </motion.button>
-        
-        <div className="phoneme-display">
-          <motion.div
-            className="phoneme-symbol"
-            animate={isPlaying ? {
-              scale: [1, 1.2, 1],
-              color: ['#667eea', '#ff6b6b', '#667eea']
-            } : {}}
-            transition={{ duration: 1 }}
-          >
-            {phoneme.symbol}
-          </motion.div>
-          <p>Click to hear the sound</p>
-        </div>
-      </div>
-      
-      <div className="practice-section">
-        <h3>Now you try!</h3>
-        <p>Repeat the sound after listening</p>
-        
-        <motion.button
-          className={`record-button ${isRecording ? 'recording' : ''} ${isProcessing ? 'processing' : ''}`}
-          onClick={isRecording ? stopRecording : startRecording}
-          disabled={isProcessing}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          {isProcessing ? (
-            <div className="spinner" />
-          ) : isRecording ? (
-            <MicOff size={24} />
-          ) : (
-            <Mic size={24} />
-          )}
-          {isProcessing ? 'Processing...' : isRecording ? `Recording... ${(2000 - recordingDuration) / 1000}s` : 'Start Recording'}
-        </motion.button>
-      </div>
-    </div>
-  );
-
-  const PracticeWords = () => (
-    <div className="practice-words">
-      <h3>Practice with Words</h3>
-      <p>Try saying these words that contain the {phoneme.symbol} sound:</p>
-      
-      <div className="words-grid">
-        {phoneme.practiceWords.map((word, index) => (
-          <motion.div
-            key={word}
-            className="word-card"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-            whileHover={{ scale: 1.05 }}
-          >
-            <div className="word-text">{word}</div>
-            <div className="phoneme-highlight">
-              {word.split('').map((letter, letterIndex) => (
-                <span
-                  key={letterIndex}
-                  className={letter.toLowerCase() === phonemeId ? 'highlighted' : ''}
-                >
-                  {letter}
-                </span>
-              ))}
-            </div>
-            <button className="play-word-btn">
-              <Play size={16} />
-            </button>
-          </motion.div>
-        ))}
-      </div>
-    </div>
-  );
 
   const TestSkills = () => (
     <div className="test-skills">
@@ -383,87 +294,109 @@ const PhonemeLearning = () => {
       <p>Record yourself saying the phoneme and get feedback</p>
       
       <div className="recording-section">
-        <motion.button
-          className={`record-button large ${isRecording ? 'recording' : ''} ${isProcessing ? 'processing' : ''}`}
-          onClick={isRecording ? stopRecording : startRecording}
-          disabled={isProcessing}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          {isProcessing ? (
-            <div className="spinner" />
-          ) : isRecording ? (
-            <MicOff size={32} />
-          ) : (
-            <Mic size={32} />
-          )}
-          {isProcessing ? 'Processing...' : isRecording ? `Recording... ${(2000 - recordingDuration) / 1000}s` : 'Record Phoneme'}
-        </motion.button>
-        
-        <div className="practice-stats">
-          <div className="stat">
-            <span className="stat-label">Practice Count:</span>
-            <span className="stat-value">{practiceCount}/5</span>
+        <div className="record-phoneme-card">
+          <motion.button
+            className={`record-button large ${isRecording ? 'recording' : ''} ${isProcessing ? 'processing' : ''}`}
+            onClick={isRecording ? stopRecording : startRecording}
+            disabled={isProcessing}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            {isProcessing ? (
+              <div className="spinner" />
+            ) : isRecording ? (
+              <MicOff size={32} />
+            ) : (
+              <Mic size={32} />
+            )}
+            {isProcessing ? 'Processing...' : isRecording ? `Recording... ${(2000 - recordingDuration) / 1000}s` : 'Record Phoneme'}
+          </motion.button>
+          
+          <div className="practice-stats">
+            <div className="stat">
+              <span className="stat-label">Practice Count:</span>
+              <span className="stat-value">{practiceCount}/5</span>
+            </div>
+            <div className="stat">
+              <span className="stat-label">Difficulty:</span>
+              <span 
+                className="stat-value difficulty"
+                style={{ color: difficulty.color }}
+              >
+                {phoneme.difficulty}
+              </span>
+            </div>
           </div>
-          <div className="stat">
-            <span className="stat-label">Difficulty:</span>
-            <span 
-              className="stat-value difficulty"
-              style={{ color: difficulty.color }}
-            >
-              {phoneme.difficulty}
-            </span>
-          </div>
+          
+          <AnimatePresence>
+            {showFeedback && lastPrediction && (
+              <motion.div
+                className="performance-feedback"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+              >
+                <h4>Your Performance</h4>
+                
+                <div className="performance-metrics-horizontal">
+                  <div className="metric-card">
+                    <div className="metric-icon">
+                      <CheckCircle size={20} />
+                    </div>
+                    <div className="metric-content">
+                      <h5>Target Phoneme</h5>
+                      <div className="metric-value target">{lastPrediction.target}</div>
+                    </div>
+                  </div>
+                  
+                  <div className="metric-card">
+                    <div className="metric-icon">
+                      <Mic size={20} />
+                    </div>
+                    <div className="metric-content">
+                      <h5>You Said</h5>
+                      <div className={`metric-value ${lastPrediction.isCorrect ? 'correct' : 'incorrect'}`}>
+                        {lastPrediction.predicted}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="metric-card">
+                    <div className="metric-icon">
+                      <BarChart3 size={20} />
+                    </div>
+                    <div className="metric-content">
+                      <h5>Confidence</h5>
+                      <div className="metric-value confidence">{Math.round(lastPrediction.confidence)}%</div>
+                    </div>
+                  </div>
+                  
+                  <div className="metric-card">
+                    <div className="metric-icon">
+                      <Star size={20} />
+                    </div>
+                    <div className="metric-content">
+                      <h5>Accuracy</h5>
+                      <div className="metric-value accuracy">{Math.round(accuracy)}%</div>
+                    </div>
+                  </div>
+                </div>
+                
+                {lastPrediction.isCorrect ? (
+                  <div className="success-message">
+                    <CheckCircle size={24} />
+                    <span>Excellent! You got it right!</span>
+                  </div>
+                ) : (
+                  <div className="improvement-message">
+                    <span>Good try! The target was '{lastPrediction.target}', you said '{lastPrediction.predicted}'. Keep practicing!</span>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
-      
-      <AnimatePresence>
-        {showFeedback && lastPrediction && (
-          <motion.div
-            className="feedback-section"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-          >
-            <h4>Your Performance</h4>
-            
-            <div className="prediction-results">
-              <div className="prediction-item">
-                <span className="prediction-label">Target Phoneme:</span>
-                <span className="prediction-value target">{lastPrediction.target}</span>
-              </div>
-              <div className="prediction-item">
-                <span className="prediction-label">You Said:</span>
-                <span className={`prediction-value ${lastPrediction.isCorrect ? 'correct' : 'incorrect'}`}>
-                  {lastPrediction.predicted}
-                </span>
-              </div>
-              <div className="prediction-item">
-                <span className="prediction-label">Confidence:</span>
-                <span className="prediction-value confidence">{Math.round(lastPrediction.confidence)}%</span>
-              </div>
-            </div>
-            
-            <div className="accuracy-display">
-              <div className="accuracy-circle">
-                <span className="accuracy-value">{Math.round(accuracy)}%</span>
-              </div>
-              <p className="accuracy-label">Pronunciation Accuracy</p>
-            </div>
-            
-            {lastPrediction.isCorrect ? (
-              <div className="success-message">
-                <CheckCircle size={24} />
-                <span>Excellent! You got it right!</span>
-              </div>
-            ) : (
-              <div className="improvement-message">
-                <span>Good try! The target was '{lastPrediction.target}', you said '{lastPrediction.predicted}'. Keep practicing!</span>
-              </div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 
@@ -471,16 +404,89 @@ const PhonemeLearning = () => {
     switch (steps[currentStep].component) {
       case 'VisualGuide':
         return <VisualGuide />;
-      case 'ListenRepeat':
-        return <ListenRepeat />;
-      case 'PracticeWords':
-        return <PracticeWords />;
       case 'TestSkills':
         return <TestSkills />;
       default:
         return <VisualGuide />;
     }
   };
+
+  // Phoneme Selection Component - inline like word practice
+  const PhonemeSelection = () => (
+    <div className="phoneme-selection">
+      <div className="phonemes-header">
+        <h3>Available Phonemes</h3>
+        <p>Select a phoneme to start learning</p>
+      </div>
+      
+      <div className="phonemes-list">
+        {availablePhonemes.map((phonemeKey, index) => {
+          const phonemeData = PHONEME_DATA[phonemeKey];
+          const difficultyData = DIFFICULTY_LEVELS[phonemeData.difficulty];
+          const isLearned = state.progress?.phonemesLearned?.includes(phonemeKey);
+          
+          return (
+            <motion.div
+              key={phonemeKey}
+              className={`phoneme-card ${isLearned ? 'learned' : ''}`}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.1 }}
+              whileHover={{ scale: 1.02 }}
+              onClick={() => navigate(`/phoneme/${phonemeKey}`)}
+            >
+              <div className="phoneme-content">
+                <div className="phoneme-header">
+                  <h4>{phonemeData.symbol}</h4>
+                  <div 
+                    className="difficulty-badge"
+                    style={{ backgroundColor: difficultyData.color }}
+                  >
+                    {phonemeData.difficulty}
+                  </div>
+                  {isLearned && (
+                    <div className="learned-badge">
+                      <CheckCircle size={16} />
+                    </div>
+                  )}
+                </div>
+                <p className="phoneme-description">{phonemeData.description}</p>
+                <div className="phonemes-display">
+                  <span className="phoneme-symbol">{phonemeData.symbol}</span>
+                </div>
+                <div className="practice-words-preview">
+                  {phonemeData.practiceWords.slice(0, 3).map((word, idx) => (
+                    <span key={idx} className="word-preview">{word}</span>
+                  ))}
+                </div>
+              </div>
+              <div className="phoneme-actions">
+                <div className="points-info">
+                  <Star size={14} />
+                  <span>+{difficultyData.points}</span>
+                </div>
+                <button
+                  className="start-learning-btn"
+                  title={isLearned ? 'Review phoneme' : 'Start learning'}
+                >
+                  <BookOpen size={16} />
+                </button>
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  // Show phoneme selection if no phonemeId is provided
+  if (!phonemeId) {
+    return (
+      <div className="main-content">
+        <PhonemeSelection />
+      </div>
+    );
+  }
 
   if (!phoneme) {
     return (
@@ -498,9 +504,9 @@ const PhonemeLearning = () => {
       <div className="phoneme-learning-container">
         {/* Header */}
         <div className="learning-header">
-          <Link to="/" className="back-button">
+          <Link to="/phoneme" className="back-button">
             <ArrowLeft size={20} />
-            Back to Home
+            Back to Learn
           </Link>
           
           <div className="phoneme-title">
@@ -590,6 +596,12 @@ const PhonemeLearning = () => {
               exit={{ opacity: 0 }}
             >
               <div className="completion-content">
+                <button
+                  className="close-modal-btn"
+                  onClick={() => setIsCompleted(false)}
+                >
+                  <X size={24} />
+                </button>
                 <motion.div
                   className="completion-icon"
                   initial={{ scale: 0 }}
@@ -610,6 +622,12 @@ const PhonemeLearning = () => {
                   <Link to="/" className="btn btn-primary">
                     Continue Learning
                   </Link>
+                  <button
+                    onClick={() => setIsCompleted(false)}
+                    className="btn btn-secondary"
+                  >
+                    View Results
+                  </button>
                 </div>
               </div>
             </motion.div>

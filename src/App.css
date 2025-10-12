@@ -1010,6 +1010,230 @@
   color: #4a5568;
 }
 
+/* Phoneme Selection Styles */
+.phoneme-selection {
+  margin-bottom: 3rem;
+}
+
+.phonemes-header {
+  margin-bottom: 2rem;
+}
+
+.phonemes-header h3 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #2d3748;
+  margin-bottom: 0.5rem;
+}
+
+.phonemes-header p {
+  color: #718096;
+  font-size: 1rem;
+}
+
+.phonemes-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.phoneme-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.phoneme-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.phoneme-card.learned {
+  border-color: #48bb78;
+  background: linear-gradient(135deg, #f0fff4 0%, #e6fffa 100%);
+}
+
+.phoneme-content {
+  flex: 1;
+}
+
+.phoneme-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.phoneme-header h4 {
+  font-size: 1.5rem;
+  margin: 0;
+  color: #2d3748;
+  font-weight: 700;
+}
+
+.difficulty-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.learned-badge {
+  color: #48bb78;
+  margin-left: auto;
+}
+
+.phoneme-description {
+  color: #718096;
+  font-size: 0.9rem;
+  margin-bottom: 0.75rem;
+}
+
+.phonemes-display {
+  margin-bottom: 0.75rem;
+}
+
+.phoneme-symbol {
+  background: #f7fafc;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.practice-words-preview {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.word-preview {
+  background: #e2e8f0;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: #4a5568;
+}
+
+.phoneme-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.points-info {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #f6ad55;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.start-learning-btn {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.start-learning-btn:hover {
+  background: #5a67d8;
+  transform: scale(1.05);
+}
+
+/* Horizontal Performance Metrics */
+.performance-metrics-horizontal {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.metric-card {
+  background: #f7fafc;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  border: 1px solid #e2e8f0;
+}
+
+.metric-icon {
+  margin-bottom: 0.5rem;
+  color: #667eea;
+}
+
+.metric-content h5 {
+  font-size: 0.8rem;
+  color: #718096;
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.metric-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #2d3748;
+}
+
+.metric-value.target {
+  color: #38a169;
+}
+
+.metric-value.correct {
+  color: #38a169;
+}
+
+.metric-value.incorrect {
+  color: #e53e3e;
+}
+
+.metric-value.confidence {
+  color: #3182ce;
+}
+
+.metric-value.accuracy {
+  color: #9f7aea;
+}
+
+/* Close modal button */
+.close-modal-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #666;
+  padding: 0.5rem;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.close-modal-btn:hover {
+  color: #000;
+  background: #f7fafc;
+}
+
 /* Phoneme detection specific styles */
 .spinner {
   width: 20px;

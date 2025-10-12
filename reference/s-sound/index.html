@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sound Safari</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>Sound Safari 🦁</h1>
+        <a href="#" class="back-button">← Sound Menu</a>
+    </header>
+
+    <main class="practice-area">
+        <div class="column target-column">
+            <h2>Let's practice the sound:</h2>
+            <div class="sound-display">S</div>
+            <div class="example-word">as in "sun" ☀️</div>
+            <div class="mouth-diagram">
+                <img src="https://i.pinimg.com/236x/63/09/56/63095689941215c24cb4bf79044d2265.jpg" alt="Mouth diagram for 'S' sound">
+            </div>
+            <button id="playSoundBtn" class="action-button">Hear the Sound 🔊</button>
+        </div>
+
+        <div class="column dashboard-column">
+            <div class="mic-container">
+                <button id="recordBtn" class="mic-button">
+                    🎤
+                    <span>Press and Hold to Speak</span>
+                </button>
+            </div>
+			<div class="feedback-visual">
+				<div class="bar-meter-container">
+					<div class="bar-meter-target-zone"></div>
+					<div id="hissBar" class="bar-meter-progress"></div>
+					<div class="bar-meter-icon">💨</div>
+				</div>
+				<div class="visual-label">Hiss Meter</div>
+			</div>
+             </div>
+
+        <div class="column scoreboard-column">
+            <div class="mascot">
+                 <img src="https://img.freepik.com/free-vector/cute-lion-mascot-cartoon-illustration-animal-wildlife-icon-concept_138676-1906.jpg?semt=ais_hybrid&w=740&q=80" alt="Friendly lion mascot">
+            </div>
+            <div id="feedbackText" class="feedback-text">
+                Ready when you are!
+            </div>
+			<div id="correctFeedback" class="correct-feedback">
+				🎉 CORRECT! 🎉
+			</div>
+            <button class="action-button" style="display: none;">Try Again</button>
+        </div>
+    </main>
+    
+    <script src="script.js"></script>
+</body>
+</html>

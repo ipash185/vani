@@ -188,6 +188,16 @@ export const PHONEME_DATA = {
     difficulty: "medium",
     practiceWords: ["done", "day", "red", "bed"],
   },
+  'eh': {
+    symbol: '/eh/',
+    description: 'Mid front unrounded vowel',
+    tonguePosition: 'Tongue raised in front, not touching roof',
+    lipPosition: 'Lips slightly spread',
+    example: 'bed, red, pen',
+    visualGuide: '😊 Smile slightly, tongue forward',
+    difficulty: 'medium',
+    practiceWords: ['bed', 'red', 'pen', 'yes']
+  },
 };
 
 // Difficulty levels for gamification

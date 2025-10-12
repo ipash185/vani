@@ -1,0 +1,192 @@
+/* General Body Styles */
+body {
+    font-family: 'Arial Rounded MT Bold', sans-serif;
+    background-color: #F0F9FF; /* Light blue background */
+    color: #075985; /* Dark blue text */
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* Header */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.back-button {
+    text-decoration: none;
+    color: #0EA5E9;
+    font-weight: bold;
+}
+
+/* Main Practice Area Layout */
+.practice-area {
+    display: flex;
+    flex-grow: 1;
+    justify-content: space-around;
+    align-items: stretch;
+    padding: 2rem;
+    gap: 2rem;
+}
+
+.column {
+    background-color: #fff;
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+}
+
+/* Column 1: Target */
+.target-column { flex: 1; }
+.sound-display {
+    font-size: 8rem;
+    font-weight: bold;
+    color: #3B82F6; /* Blue for 'S' */
+}
+.example-word { font-size: 1.5rem; margin-bottom: 1rem; }
+.mouth-diagram img { max-width: 150px; }
+
+/* Column 2: Dashboard */
+.dashboard-column { flex: 1.5; justify-content: center; }
+.mic-container { display: flex; justify-content: center; align-items: center; }
+.mic-button {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    border: 10px solid #E0F2FE;
+    background-color: #3B82F6;
+    color: white;
+    font-size: 4rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+.mic-button:hover { background-color: #2563EB; }
+.mic-button.recording { background-color: #EF4444; border-color: #FEE2E2;} /* Red when recording */
+.mic-button span { font-size: 1rem; margin-top: 10px;}
+
+/* Column 3: Scoreboard */
+.scoreboard-column { flex: 1; }
+.mascot img { max-width: 180px; }
+.feedback-text { font-size: 1.5rem; font-weight: bold; margin: 1rem 0; }
+
+/* General Action Button */
+.action-button {
+    background-color: #10B981; /* Green */
+    color: white;
+    border: none;
+    padding: 15px 25px;
+    font-size: 1.2rem;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+.action-button:hover { background-color: #059669; }
+
+/* Feedback Visuals Container */
+.feedback-visual {
+    margin-top: 2rem;
+    opacity: 0.3; /* Start faded out */
+    transition: opacity 0.3s ease;
+}
+
+.feedback-visual.active {
+    opacity: 1; /* Fade in when recording */
+}
+
+.visual-label {
+    font-weight: bold;
+    color: #555;
+}
+
+/* The spinning animation */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+/* --- Styles for the Upgraded Airflow Meter --- */
+/* --- Styles for the NEW Bar Meter --- */
+.feedback-visual {
+    margin-top: 2rem;
+    opacity: 0.3;
+    transition: opacity 0.3s ease;
+}
+.feedback-visual.active { opacity: 1; }
+
+.bar-meter-container {
+    width: 80px;
+    height: 180px;
+    background-color: #E0F2FE; /* Light blue background */
+    border-radius: 15px;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden; /* Keeps progress bar inside */
+    border: 3px solid #BEE1F9;
+}
+
+.bar-meter-target-zone {
+    position: absolute;
+    bottom: 60%; /* Positioned between 60% and 90% height */
+    left: 0;
+    width: 100%;
+    height: 30%; /* The zone is 30% of the total height */
+    background-color: #A5D6A7; /* Light green for the target */
+    opacity: 0.7;
+}
+
+.bar-meter-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 0; /* Starts at 0 height */
+    background-color: #3B82F6; /* Blue progress bar */
+    transition: height 0.1s linear; /* Smoothly animate height changes */
+}
+
+.bar-meter-icon {
+    position: absolute;
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 2.5rem;
+    opacity: 0.5;
+}
+
+.visual-label {
+    margin-top: 10px;
+    font-weight: bold;
+    color: #555;
+}
+
+/* --- Style for the "CORRECT!" feedback --- */
+.correct-feedback {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #059669; /* A strong green color */
+    margin-top: 1.5rem;
+    
+    /* Animation properties */
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.correct-feedback.show {
+    opacity: 1;
+    transform: scale(1);
+}

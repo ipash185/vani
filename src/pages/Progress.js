@@ -418,7 +418,7 @@ const Progress = () => {
             >
               <TrendingUp size={24} />
               <h3>Continue Your Streak</h3>
-              <p>You're on a {progress.streak || 0} day streak! Keep practicing daily to maintain your progress.</p>
+              <p>You're on a {realProgress?.streak || 0} day streak! Keep practicing daily to maintain your progress.</p>
             </motion.div>
             
             <motion.div
@@ -429,7 +429,7 @@ const Progress = () => {
             >
               <BookOpen size={24} />
               <h3>Learn New Phonemes</h3>
-              <p>You've mastered {progress.phonemesLearned?.length || 0} phonemes. Try learning the /r/ sound next!</p>
+              <p>You've mastered {realProgress?.phonemesLearned?.length || 0} phonemes. Try learning the /h/ sound next!</p>
             </motion.div>
           </div>
         </div>

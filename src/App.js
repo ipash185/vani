@@ -92,6 +92,14 @@ function App() {
                 } 
               />
               <Route 
+                path="/phoneme" 
+                element={
+                  isAuthenticated ? 
+                    <PhonemeLearning /> : 
+                    <Navigate to="/login" replace />
+                } 
+              />
+              <Route 
                 path="/phoneme/:phonemeId" 
                 element={
                   isAuthenticated ? 

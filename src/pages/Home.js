@@ -97,7 +97,7 @@ const Home = () => {
       title: "Learn Phonemes",
       description: "Start with individual sounds",
       icon: BookOpen,
-      link: "/phoneme/h",
+      link: "/phoneme",
       color: "linear-gradient(45deg, #ff6b6b, #ff8e8e)",
       progress: state.progress?.phonemesLearned?.length || 0,
       total: 12,
@@ -169,11 +169,8 @@ const Home = () => {
         {/* Welcome Section */}
         <motion.div variants={itemVariants} className="welcome-section">
           <div className="welcome-content">
-            <h1>Welcome to VANI! 🎯</h1>
-            <p>
-              Your speech learning adventure starts here. Let's practice
-              together and improve your communication skills!
-            </p>
+            <h1><span>Welcome to VANI! </span>🎯</h1>
+            <p>Your speech learning adventure starts here. Let's practice together and improve your communication skills!</p>
           </div>
           <div className="welcome-illustration">
             <motion.div
@@ -284,7 +281,7 @@ const Home = () => {
                 <li>Visual guides and animations</li>
                 <li>Progress tracking</li>
               </ul>
-              <Link to="/phoneme/h" className="btn btn-primary">
+              <Link to="/phoneme" className="btn btn-primary">
                 <Play size={20} />
                 Start Guided Learning
               </Link>

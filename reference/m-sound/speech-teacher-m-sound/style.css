@@ -1,0 +1,177 @@
+/* General Body Styles */
+body {
+    font-family: 'Arial Rounded MT Bold', sans-serif;
+    background-color: #F0F9FF; /* Light blue background */
+    color: #075985; /* Dark blue text */
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* Header */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.back-button {
+    text-decoration: none;
+    color: #0EA5E9;
+    font-weight: bold;
+}
+
+/* Main Practice Area Layout */
+.practice-area {
+    display: flex;
+    flex-grow: 1;
+    justify-content: space-around;
+    align-items: stretch;
+    padding: 2rem;
+    gap: 2rem;
+}
+
+.column {
+    background-color: #fff;
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+}
+
+/* Column 1: Target */
+.target-column { flex: 1; }
+.sound-display {
+    font-size: 8rem;
+    font-weight: bold;
+    color: #3B82F6; /* Blue for 'S' */
+}
+.example-word { font-size: 1.5rem; margin-bottom: 1rem; }
+.mouth-diagram img { max-width: 150px; }
+
+/* Column 2: Dashboard */
+.dashboard-column { flex: 1.5; justify-content: center; }
+.mic-container { display: flex; justify-content: center; align-items: center; }
+.mic-button {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    border: 10px solid #E0F2FE;
+    background-color: #3B82F6;
+    color: white;
+    font-size: 4rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+.mic-button:hover { background-color: #2563EB; }
+.mic-button.recording { background-color: #EF4444; border-color: #FEE2E2;} /* Red when recording */
+.mic-button span { font-size: 1rem; margin-top: 10px;}
+
+/* Column 3: Scoreboard */
+.scoreboard-column { flex: 1; }
+.mascot img { max-width: 180px; }
+.feedback-text { font-size: 1.5rem; font-weight: bold; margin: 1rem 0; }
+
+/* General Action Button */
+.action-button {
+    background-color: #10B981; /* Green */
+    color: white;
+    border: none;
+    padding: 15px 25px;
+    font-size: 1.2rem;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+.action-button:hover { background-color: #059669; }
+
+/* Feedback Visuals Container */
+.feedback-visual {
+    margin-top: 2rem;
+    opacity: 0.3; /* Start faded out */
+    transition: opacity 0.3s ease;
+}
+
+.feedback-visual.active {
+    opacity: 1; /* Fade in when recording */
+}
+
+.visual-label {
+    font-weight: bold;
+    color: #555;
+}
+
+/* --- Style for the Debug Display --- */
+.debug-info {
+    margin-top: 1rem;
+    font-family: monospace;
+    font-size: 1rem;
+    color: #64748B;
+    background-color: #F8FAFC;
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #E2E8F0;
+    min-height: 20px;
+}
+
+/* --- Styles for the Humming Flower Meter --- */
+.flower-svg {
+    width: 250px;
+    height: 250px;
+}
+
+.flower-target-outline path {
+    fill: none;
+    stroke: #E2E8F0;
+    stroke-width: 0.5;
+    stroke-dasharray: 2, 2;
+}
+
+.flower-petals {
+    transform-origin: center;
+    transition: transform 0.3s ease-out;
+    transform: scale(0.2); /* Starts as a small bud */
+}
+
+.petal { fill: #F472B6; } /* Pink petals */
+.flower-center { fill: #FDE047; } /* Yellow center */
+
+/* Correct/Success State */
+.flower-petals.bloomed {
+    filter: drop-shadow(0 0 15px #F472B6);
+    animation: pulse 1s infinite;
+}
+
+.success-text {
+    position: absolute;
+    bottom: 25%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #DB2777;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.success-text.show {
+    opacity: 1;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}

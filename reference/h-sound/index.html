@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sound Safari - Learning "help"</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>Learning "help" (Step 1 of 4)</h1>
+        <a href="#" class="back-button">← Word Menu</a>
+    </header>
+
+    <main class="practice-area">
+        <div class="column target-column">
+            <div id="soundDisplay" class="sound-display">H</div>
+            <div id="exampleWord" class="example-word">Make the "hhh" sound</div>
+            <div class="mouth-diagram">
+                <img id="mouthDiagram" src="https://i.imgur.com/gK2t2d8.png" alt="Mouth diagram for 'H' sound">
+            </div>
+        </div>
+
+        <div class="column dashboard-column">
+            
+            <div id="featherGame" class="feedback-visual active">
+                <div class="feather-container">
+                    <div id="feather" class="feather">🪶</div>
+                </div>
+                <div class="visual-label">Use a gentle puff of air to lift the feather</div>
+            </div>
+
+            <div class="mic-container">
+                <button id="recordBtn" class="mic-button">🎤</button>
+            </div>
+            <div id="debugInfo" class="debug-info"></div>
+        </div>
+
+        <div class="column scoreboard-column">
+            <div class="mascot">
+                 <img src="https://img.freepik.com/free-vector/cute-lion-mascot-cartoon-illustration-animal-wildlife-icon-concept_138676-1906.jpg?semt=ais_hybrid&w=740&q=80" alt="Friendly lion mascot">
+            </div>
+            <div id="feedbackText" class="feedback-text">
+                Hold the mic to try!
+            </div>
+        </div>
+    </main>
+    
+    <script src="script.js"></script>
+</body>
+</html>
