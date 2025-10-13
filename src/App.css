@@ -630,6 +630,7 @@
   background: linear-gradient(180deg, #4ecdc4 0%, #44a08d 100%);
   border-radius: 4px 4px 0 0;
   margin-right: 2px;
+  width: 20px;
   transition: all 0.3s ease;
 }
 
@@ -637,6 +638,7 @@
   background: linear-gradient(180deg, #45b7d1 0%, #96c93d 100%);
   border-radius: 4px 4px 0 0;
   margin-left: 2px;
+  width: 20px;
   transition: all 0.3s ease;
 }
 
