@@ -2469,10 +2469,6 @@ body {
     height: 150px;
   }
 
-  .day-bars {
-    height: 100px;
-  }
-
   .achievements-grid {
     grid-template-columns: 1fr;
   }
