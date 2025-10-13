@@ -263,7 +263,7 @@ const TestSkills = React.memo(function TestSkills({
               <div className="meter-bar">
                 <div 
                   className="meter-fill s-meter"
-                  style={{ height: `${sMeterValue}%`, transition: 'height 0.1s ease-out' }}
+                  style={{ height: `${sMeterValue}%` }}
                 ></div>
                 <div className="meter-target s-target" style={{ bottom: `${targets.s[0]}%`, height: `${targets.s[1] - targets.s[0]}%` }}></div>
               </div>
