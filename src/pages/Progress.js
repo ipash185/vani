@@ -14,7 +14,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { CORE_WORDS } from '../data/phonemes';
+import { CORE_WORDS, PHONEME_DATA } from '../data/phonemes';
 import progressService from '../services/progressService';
 
 const Progress = () => {
@@ -31,7 +31,7 @@ const Progress = () => {
   }, []);
 
   const progress = state.progress || {};
-  const totalPhonemes = 12; // Total phonemes in the system
+  const totalPhonemes = Object.keys(PHONEME_DATA).length; // Total phonemes in the system
   const totalWords = CORE_WORDS.length;
 
   const achievements = [
@@ -85,84 +85,73 @@ const Progress = () => {
     }
   ];
 
-  // Generate weekly progress from real data
-// In Progress.js
-
-  // Generate weekly progress from real data
+    // Generate weekly progress from real data
   const generateWeeklyProgress = () => {
     const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-    // Helper function to get all dates (YYYY-MM-DD) for the current week
-    const getWeekDates = () => {
-      const today = new Date();
-      const week = [];
-      const startOfWeek = new Date(today);
-      // Set to the Sunday of the current week
-      startOfWeek.setDate(today.getDate() - today.getDay()); 
-      
-      for (let i = 0; i < 7; i++) {
-        const date = new Date(startOfWeek);
-        date.setDate(startOfWeek.getDate() + i);
-        week.push(date.toISOString().split('T')[0]);
-      }
-      return week;
-    };
-
-    const currentWeekDates = getWeekDates();
-
-    // Use a Map for efficient data aggregation
-    const weeklyDataMap = new Map();
-    currentWeekDates.forEach((date, index) => {
-      weeklyDataMap.set(date, {
-        day: weekDays[index],
-        sessions: 0,
-        totalAccuracy: 0,
-        count: 0,
-      });
+    const today = new Date();
+    const weekDates = Array.from({ length: 7 }).map((_, i) => {
+      const date = new Date(today);
+      date.setDate(today.getDate() - today.getDay() + i);
+      return date.toISOString().split('T')[0];
     });
 
-    if (realProgress?.sentenceHistory) {
-      // 1. Filter sentence history to only include sessions from the current week
-      const thisWeekSentenceHistory = realProgress.sentenceHistory.filter(session =>
-        currentWeekDates.includes(session.date)
-      );
-      
-      thisWeekSentenceHistory.forEach(session => {
-        const dayData = weeklyDataMap.get(session.date);
-        if (dayData) {
-          dayData.sessions += 1;
-          dayData.totalAccuracy += session.accuracy;
-          dayData.count += 1;
-        }
-      });
-    }
+    const practiceHistory = [
+      ...(realProgress?.sentenceHistory || []),
+      ...(realProgress?.wordHistory || []),
+    ];
 
-    if (realProgress?.wordHistory) {
-      // 2. Filter word history to only include sessions from the current week
-      const thisWeekWordHistory = realProgress.wordHistory.filter(session =>
-        currentWeekDates.includes(session.date)
+    const weeklyData = weekDates.map((date, index) => {
+      const daySessions = practiceHistory.filter(
+        (session) => session.date === date
       );
-      
-      thisWeekWordHistory.forEach(session => {
-        const dayData = weeklyDataMap.get(session.date);
-        if (dayData) {
-          dayData.sessions += 1;
-          dayData.totalAccuracy += session.accuracy;
-          dayData.count += 1;
-        }
-      });
-    }
-    
-    // Convert the map to an array and calculate the final average accuracy
-    return Array.from(weeklyDataMap.values()).map(data => ({
-      day: data.day,
-      sessions: data.sessions,
-      // 2. Correctly calculate average accuracy
-      accuracy: data.count > 0 ? Math.round(data.totalAccuracy / data.count) : 0,
-    }));
+      const sessions = daySessions.length;
+      const accuracy =
+        sessions > 0
+          ? daySessions.reduce((sum, s) => sum + s.accuracy, 0) / sessions
+          : 0;
+
+      return {
+        day: weekDays[new Date(date).getDay()],
+        sessions,
+        accuracy: Math.round(accuracy),
+      };
+    });
+
+    return weeklyData;
   };
 
   const weeklyProgress = generateWeeklyProgress();
+
+  const phonemesLearnedCount = realProgress?.phonemesLearned?.length || 0;
+  const wordsLearnedCount = realProgress?.wordsLearned?.length || 0;
+  const sentencesPracticedCount = realProgress?.totalSentencesPracticed || 0;
+
+  const learningPath = [
+    {
+      id: 'phonemes',
+      title: 'Basic Phonemes',
+      description: 'Learn fundamental sounds',
+      icon: '🎯',
+      progress: (phonemesLearnedCount / totalPhonemes) * 100,
+      status: phonemesLearnedCount > 0 ? (phonemesLearnedCount === totalPhonemes ? 'completed' : 'in-progress') : 'locked',
+    },
+    {
+      id: 'words',
+      title: 'Word Building',
+      description: 'Combine phonemes into words',
+      icon: '📚',
+      progress: (wordsLearnedCount / totalWords) * 100,
+      status: wordsLearnedCount > 0 ? (wordsLearnedCount === totalWords ? 'completed' : 'in-progress') : 'locked',
+    },
+    {
+      id: 'sentences',
+      title: 'Sentence Practice',
+      description: 'Practice complete sentences',
+      icon: '🗣️',
+      progress: (sentencesPracticedCount / 50) * 100, // Assuming 50 sentences is the goal
+      status: sentencesPracticedCount > 0 ? (sentencesPracticedCount >= 50 ? 'completed' : 'in-progress') : 'locked',
+    },
+  ];
 
   const stats = [
     {
@@ -368,41 +357,28 @@ const Progress = () => {
         <div className="learning-path">
           <h2>Learning Path</h2>
           <div className="path-progress">
-            <div className="path-item completed">
-              <div className="path-icon">🎯</div>
-              <div className="path-content">
-                <h3>Basic Phonemes</h3>
-                <p>Learn fundamental sounds</p>
-                <div className="path-progress-bar">
-                  <div className="path-progress-fill" style={{ width: '75%' }} />
+            {learningPath.map((item, index) => (
+              <motion.div
+                key={item.id}
+                className={`path-item ${item.status}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.15 }}
+              >
+                <div className="path-icon">{item.icon}</div>
+                <div className="path-content">
+                  <h3>{item.title}</h3>
+                  <p>{item.description}</p>
+                  <div className="path-progress-bar">
+                    <div
+                      className="path-progress-fill"
+                      style={{ width: `${item.progress}%` }}
+                    />
+                  </div>
+                  <span className="path-percentage">{Math.round(item.progress)}%</span>
                 </div>
-                <span className="path-percentage">75%</span>
-              </div>
-            </div>
-            
-            <div className="path-item in-progress">
-              <div className="path-icon">📚</div>
-              <div className="path-content">
-                <h3>Word Building</h3>
-                <p>Combine phonemes into words</p>
-                <div className="path-progress-bar">
-                  <div className="path-progress-fill" style={{ width: '40%' }} />
-                </div>
-                <span className="path-percentage">40%</span>
-              </div>
-            </div>
-            
-            <div className="path-item locked">
-              <div className="path-icon">🗣️</div>
-              <div className="path-content">
-                <h3>Sentence Practice</h3>
-                <p>Practice complete sentences</p>
-                <div className="path-progress-bar">
-                  <div className="path-progress-fill" style={{ width: '0%' }} />
-                </div>
-                <span className="path-percentage">0%</span>
-              </div>
-            </div>
+              </motion.div>
+            ))}
           </div>
         </div>
 

@@ -17,6 +17,8 @@ class ProgressService {
         lastSessionDate: null,
         sentenceHistory: [],
         wordHistory: [],
+        phonemesLearned: [],
+        wordsLearned: [],
         currentSentences: [
           "I need help please",
           "Yes, I can do that",
@@ -279,6 +281,40 @@ class ProgressService {
       progress.averageAccuracy =
         allRecentSessions.reduce((sum, session) => sum + session.accuracy, 0) /
         allRecentSessions.length;
+    }
+
+    this.saveProgress(progress);
+    return progress;
+  }
+
+  // Add a newly learned phoneme
+  addLearnedPhoneme(phoneme) {
+    const progress = this.getProgress();
+    if (!progress) return;
+
+    if (!progress.phonemesLearned) {
+      progress.phonemesLearned = [];
+    }
+
+    if (!progress.phonemesLearned.includes(phoneme)) {
+      progress.phonemesLearned.push(phoneme);
+    }
+
+    this.saveProgress(progress);
+    return progress;
+  }
+
+  // Add a newly learned word
+  addLearnedWord(wordId) {
+    const progress = this.getProgress();
+    if (!progress) return;
+
+    if (!progress.wordsLearned) {
+      progress.wordsLearned = [];
+    }
+
+    if (!progress.wordsLearned.includes(wordId)) {
+      progress.wordsLearned.push(wordId);
     }
 
     this.saveProgress(progress);

@@ -2273,13 +2273,13 @@ body {
 }
 
 .achievement-card.unlocked {
-  border: 2px solid #4caf50;
-  background: rgba(76, 175, 80, 0.05);
+  background: #e6fffa;
+  border-color: #38b2ac;
 }
 
 .achievement-card.locked {
-  opacity: 0.6;
-  filter: grayscale(50%);
+  background: #f1f5f9;
+  border-color: #cbd5e1;
 }
 
 .achievement-icon {
