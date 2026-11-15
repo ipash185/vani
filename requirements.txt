@@ -5,3 +5,4 @@ joblib
 scipy
 noisereduce
 soundfile
+imageio-ffmpeg

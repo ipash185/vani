@@ -9,6 +9,8 @@ from scipy.io.wavfile import write
 import noisereduce as nr
 import tempfile
 import json
+import subprocess
+import imageio_ffmpeg
 
 # --- Configuration: Point to your VAD-trained model files ---
 MODEL_PATH = "phoneme_recognition_model_vad.h5"
@@ -97,9 +99,39 @@ class PhonemeClassifier:
         Returns:
             dict: Classification result with phoneme, confidence, and metadata
         """
+        converted_audio_path = None
+        temp_path = None
+
         try:
-            # Load audio (2-second recording)
-            audio, sr = librosa.load(audio_file_path, sr=SAMPLE_RATE)
+            # Browser recordings are WebM/Opus files. Convert them to WAV before
+            # loading because soundfile/librosa cannot decode WebM reliably.
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as wav_file:
+                converted_audio_path = wav_file.name
+
+            ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
+            conversion = subprocess.run(
+                [
+                    ffmpeg_path,
+                    "-y",
+                    "-loglevel",
+                    "error",
+                    "-i",
+                    audio_file_path,
+                    "-ac",
+                    "1",
+                    "-ar",
+                    str(SAMPLE_RATE),
+                    converted_audio_path,
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            if conversion.returncode != 0:
+                details = conversion.stderr.strip() or "unknown FFmpeg error"
+                raise RuntimeError(f"Audio conversion failed: {details}")
+
+            audio, sr = librosa.load(converted_audio_path, sr=SAMPLE_RATE)
             
             # --- Combined Pre-processing Pipeline (exact same as original) ---
             # 2a. Convert to floating point
@@ -129,9 +161,6 @@ class PhonemeClassifier:
             # Predict phoneme
             phoneme, confidence = self.predict_phoneme(temp_path)
             
-            # Clean up temporary file
-            os.unlink(temp_path)
-            
             return {
                 "success": True,
                 "phoneme": phoneme,
@@ -147,6 +176,10 @@ class PhonemeClassifier:
                 "phoneme": None,
                 "confidence": 0.0
             }
+        finally:
+            for temporary_path in (converted_audio_path, temp_path):
+                if temporary_path and os.path.exists(temporary_path):
+                    os.unlink(temporary_path)
 
     def classify_audio_data(self, audio_data, sample_rate=SAMPLE_RATE):
         """
