@@ -77,7 +77,12 @@ function initializePhonemeClassifier() {
       errorOutput += data.toString();
     });
 
-    pythonProcess.on("close", (code) => {
+    pythonProcess.on("close", (code, signal) => {
+      console.log("Phoneme classifier exited", {
+        code,
+        signal,
+        stderr: errorOutput,
+      });
       // Check if model loaded successfully (even if there are warnings)
       if (
         code === 0 ||
