@@ -6,3 +6,6 @@ scipy
 noisereduce
 soundfile
 imageio-ffmpeg
+pronouncing
+jellyfish
+python-Levenshtein
